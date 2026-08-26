@@ -66,8 +66,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return {
-    title: `${article.title} | Wanderline`,
+    title: article.title,
     description: article.excerpt || article.content.slice(0, 150),
+       alternates: {
+     canonical: `https://www.wanderline.com/article/${slug}`,
+   },
     openGraph: {
       title: article.title,
       description: article.excerpt || article.content.slice(0, 150),
