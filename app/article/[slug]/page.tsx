@@ -6,6 +6,7 @@ import Image from 'next/image'
 import ReadingProgressBar from '@/components/ReadingProgressBar'
 import ShareButtons from '@/components/ShareButtons'
 import ReactionBar from '@/components/ReactionBar'
+import NewsletterForm from '@/components/NewsletterForm'
 
 const categoryColors: Record<string, string> = {
   Travel: 'bg-blue-100 text-blue-800',
@@ -244,14 +245,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </div>
           )}
 
-          <div className="bg-blue-50 rounded-xl p-5 text-center mb-6">
-            <p className="text-sm text-blue-900 mb-3">Get new stories weekly</p>
-            <input
-              type="email"
-              placeholder="Your email"
-              className="border border-blue-200 rounded-full px-3 py-1.5 text-xs w-full"
-            />
-          </div>
+          <NewsletterForm variant="blue" />
 
           <div className="bg-gray-100 rounded-xl h-64 flex items-center justify-center text-xs text-gray-400">
             Ad space

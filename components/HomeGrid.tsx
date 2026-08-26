@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import NewsletterForm from './NewsletterForm'
 
 type Article = {
   id: string
@@ -106,16 +107,7 @@ export default function HomeGrid({ articles }: { articles: Article[] }) {
           </a>
         ))}
 
-        <div className="rounded-lg bg-purple-50/60 flex items-center justify-center p-5 text-center">
-          <div>
-            <p className="text-sm mb-2">Get new stories in your inbox</p>
-            <input
-              type="email"
-              placeholder="Your email"
-              className="border border-gray-300 rounded-full px-3 py-1.5 text-xs w-36"
-            />
-          </div>
-        </div>
+        <NewsletterForm variant="purple" />
       </div>
 
       {filtered.length === 0 && (
