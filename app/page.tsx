@@ -1,0 +1,84 @@
+export const revalidate = 60
+
+import { supabase } from '@/lib/supabase'
+import HomeGrid from '@/components/HomeGrid'
+
+export default async function Home() {
+  const { data: articles } = await supabase
+    .from('articles')
+    .select('*')
+    .eq('published', true)
+    .order('created_at', { ascending: false })
+
+  const totalArticles = articles?.length || 0
+
+  return (
+    <div className="bg-[#faf9f6] min-h-screen">
+
+      <div className="w-full bg-gradient-to-r from-blue-50 via-blue-50/60 to-purple-50/40">
+        <div className="max-w-5xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between border-b border-gray-200/60 pb-4">
+            <h1 className="text-2xl font-serif text-amber-700">Wanderline</h1>
+            <nav className="flex gap-4 text-sm text-gray-600">
+              <a href="/category/travel" className="hover:text-amber-700">Travel</a>
+              <a href="/category/world-stories" className="hover:text-amber-700">World Stories</a>
+              <a href="/category/crime" className="hover:text-amber-700">Crime</a>
+              <a href="/category/culture" className="hover:text-amber-700">Culture</a>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <main className="max-w-5xl mx-auto px-6 py-10">
+        <HomeGrid articles={articles || []} />
+      </main>
+
+      <div className="w-full bg-gray-900 text-white">
+        <div className="max-w-5xl mx-auto px-6 py-14 text-center">
+          <p className="text-xs uppercase tracking-widest text-gray-400 mb-3">By the numbers</p>
+          <p className="text-5xl font-serif mb-2">{totalArticles}+ stories</p>
+          <p className="text-gray-400 text-sm">Travel notes, investigations, and culture pieces from around the world.</p>
+        </div>
+      </div>
+
+      <div className="w-full bg-gray-100">
+        <div className="max-w-5xl mx-auto px-6 py-10">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
+            <div>
+              <h5 className="font-serif text-lg mb-2 text-amber-700">Wanderline</h5>
+              <p className="text-sm text-gray-500 max-w-xs">
+                Travel notes, world events, and the crime and culture stories behind them.
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Categories</p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li><a href="/category/travel" className="hover:text-gray-900">Travel</a></li>
+                <li><a href="/category/world-stories" className="hover:text-gray-900">World Stories</a></li>
+                <li><a href="/category/crime" className="hover:text-gray-900">Crime</a></li>
+                <li><a href="/category/culture" className="hover:text-gray-900">Culture</a></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Company</p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li><a href="#" className="hover:text-gray-900">About</a></li>
+                <li><a href="#" className="hover:text-gray-900">Contact</a></li>
+                <li><a href="#" className="hover:text-gray-900">Careers</a></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">Legal</p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li><a href="#" className="hover:text-gray-900">Privacy</a></li>
+                <li><a href="#" className="hover:text-gray-900">Terms</a></li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-10 pt-6 border-t border-gray-200">© 2026 Wanderline. All stories are for illustration purposes.</p>
+        </div>
+      </div>
+
+    </div>
+  )
+}
