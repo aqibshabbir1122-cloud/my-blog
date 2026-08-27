@@ -47,6 +47,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const categoryName = categoryNames[slug] || slug
   const description = categoryDescriptions[slug] || 'Stories from Wanderline.'
 
+  const { data: latestArticle } = await supabase
+    .from('articles')
+    .select('cover_image')
+    .eq('published', true)
+    .eq('category', categoryName)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  const ogImages = latestArticle?.cover_image ? [latestArticle.cover_image] : []
+
   return {
     title: categoryName,
     description: description,
@@ -58,11 +69,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description: description,
       url: `https://www.wanderline.com/category/${slug}`,
       type: 'website',
+      images: ogImages,
     },
     twitter: {
       card: 'summary_large_image',
       title: `${categoryName} | Wanderline`,
       description: description,
+      images: ogImages,
     },
   }
 }
