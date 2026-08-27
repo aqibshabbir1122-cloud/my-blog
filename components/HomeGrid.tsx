@@ -61,7 +61,7 @@ export default function HomeGrid({ articles }: { articles: Article[] }) {
               <a href={"/article/" + article.slug} key={article.id} className="block rounded-lg overflow-hidden bg-white border border-gray-200 hover:-translate-y-1 hover:shadow-md transition-all duration-150">
                 {article.cover_image && (
                   <div className="relative w-full h-24">
-                    <Image src={article.cover_image} alt={article.title} fill priority sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" />
+                    <Image src={article.cover_image} alt={article.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" />
                   </div>
                 )}
                 <div className="p-3">

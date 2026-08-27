@@ -53,6 +53,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     alternates: {
       canonical: `https://www.wanderline.com/category/${slug}`,
     },
+    openGraph: {
+      title: `${categoryName} | Wanderline`,
+      description: description,
+      url: `https://www.wanderline.com/category/${slug}`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${categoryName} | Wanderline`,
+      description: description,
+    },
   }
 }
 
