@@ -2,6 +2,8 @@ export const revalidate = 300
 
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
+import SiteHeader from '@/components/SiteHeader'
+import SiteFooter from '@/components/SiteFooter'
 
 const categoryColors: Record<string, string> = {
   Travel: 'bg-blue-100 text-blue-800',
@@ -96,17 +98,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
   return (
     <div className="bg-[#faf9f6] min-h-screen">
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between pb-4 border-b border-gray-200 mb-8">
-          <a href="/" className="text-2xl font-serif text-amber-700">Wanderline</a>
-          <nav className="flex gap-4 text-sm text-gray-600">
-            <a href="/category/travel" className="hover:text-amber-700">Travel</a>
-            <a href="/category/world-stories" className="hover:text-amber-700">World Stories</a>
-            <a href="/category/crime" className="hover:text-amber-700">Crime</a>
-            <a href="/category/culture" className="hover:text-amber-700">Culture</a>
-          </nav>
-        </div>
+      <SiteHeader variant="plain" />
 
+      <main className="max-w-5xl mx-auto px-6 py-10">
         <div className={heroBg + " rounded-2xl p-10 text-center mb-10"}>
           <h1 className={"text-4xl font-serif mb-2 " + heroText}>{categoryName}</h1>
           <p className="text-gray-600">{description}</p>
@@ -134,6 +128,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
           <p className="text-gray-500">No articles in this category yet.</p>
         )}
       </main>
+
+      <SiteFooter />
     </div>
   )
 }

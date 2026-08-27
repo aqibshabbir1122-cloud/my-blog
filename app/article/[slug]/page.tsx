@@ -7,6 +7,8 @@ import ReadingProgressBar from '@/components/ReadingProgressBar'
 import ShareButtons from '@/components/ShareButtons'
 import ReactionBar from '@/components/ReactionBar'
 import NewsletterForm from '@/components/NewsletterForm'
+import SiteHeader from '@/components/SiteHeader'
+import SiteFooter from '@/components/SiteFooter'
 
 const categoryColors: Record<string, string> = {
   Travel: 'bg-blue-100 text-blue-800',
@@ -159,6 +161,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="bg-[#faf9f6] min-h-screen">
+      <SiteHeader variant="plain" />
       <ReadingProgressBar color={barColor} />
             <script
         type="application/ld+json"
@@ -263,6 +266,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </aside>
 
       </main>
+
+      <SiteFooter />
     </div>
   )
 }
