@@ -60,6 +60,8 @@ export default function NewsletterForm({ variant = 'blue' }: NewsletterFormProps
           <form onSubmit={handleSubmit} className="flex flex-col items-center gap-2">
             <input
               type="email"
+              id="newsletter-email"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email"

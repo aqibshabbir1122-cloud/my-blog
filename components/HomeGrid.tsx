@@ -46,6 +46,8 @@ export default function HomeGrid({ articles }: { articles: Article[] }) {
         <p className="text-gray-600 mb-5">Travel notes, world events, and the crime and culture stories behind them.</p>
         <input
           type="text"
+          id="homepage-search"
+          name="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search stories"
