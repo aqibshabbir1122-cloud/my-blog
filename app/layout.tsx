@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.wanderline.com'),
+  metadataBase: new URL('https://www.wanderline.site'),
   title: {
     default: "Wanderline — Stories from every corner of the world",
     template: "%s | Wanderline",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Wanderline — Stories from every corner of the world",
     description: "Travel notes, world events, and the crime and culture stories behind them.",
-    url: 'https://www.wanderline.com',
+    url: 'https://www.wanderline.site',
     siteName: 'Wanderline',
     type: 'website',
   },
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     description: "Travel notes, world events, and the crime and culture stories behind them.",
   },
   alternates: {
-    canonical: 'https://www.wanderline.com',
+    canonical: 'https://www.wanderline.site',
   },
 };
 

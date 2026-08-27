@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: article.title,
     description: article.excerpt || article.content.slice(0, 150),
        alternates: {
-     canonical: `https://www.wanderline.com/article/${slug}`,
+     canonical: `https://www.wanderline.site/article/${slug}`,
    },
     openGraph: {
       title: article.title,

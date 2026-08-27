@@ -62,12 +62,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: categoryName,
     description: description,
     alternates: {
-      canonical: `https://www.wanderline.com/category/${slug}`,
+      canonical: `https://www.wanderline.site/category/${slug}`,
     },
     openGraph: {
       title: `${categoryName} | Wanderline`,
       description: description,
-      url: `https://www.wanderline.com/category/${slug}`,
+      url: `https://www.wanderline.site/category/${slug}`,
       type: 'website',
       images: ogImages,
     },
