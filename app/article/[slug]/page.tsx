@@ -118,6 +118,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     .order('created_at', { ascending: false })
     .limit(3)
 
+  const { data: reactionRows } = await supabase
+    .from('reactions')
+    .select('reaction_type, count')
+    .eq('article_slug', slug)
+
+  const reactionCounts: Record<string, number> = {}
+  reactionRows?.forEach((r) => {
+    reactionCounts[r.reaction_type] = r.count
+  })
+
   const readTime = estimateReadTime(article.content)
   const badgeColor = categoryColors[article.category] || 'bg-gray-200 text-gray-800'
   const textColor = categoryTextColors[article.category] || 'text-gray-700'
@@ -207,7 +217,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
           <ShareButtons title={article.title} />
 
-          <ReactionBar />
+          <ReactionBar articleSlug={slug} initialCounts={reactionCounts} />
 
           {moreStories && moreStories.length > 0 && (
             <div className="mt-12">
