@@ -11,7 +11,7 @@ interface CategoryPageProps {
   params: Promise<{ slug: string }>
 }
 
-function formatDisplayName(slug: string): string {
+function normalizeCategoryName(slug: string): string {
   const decoded = decodeURIComponent(slug).trim()
   return decoded
     .split(/[-_]/)
@@ -19,32 +19,38 @@ function formatDisplayName(slug: string): string {
     .join(' ')
 }
 
-async function getArticlesByCategory(rawSlug: string) {
-  const decoded = decodeURIComponent(rawSlug).trim()
-  const displayName = formatDisplayName(decoded)
-  const spacedName = decoded.replace(/[-_]+/g, ' ')
+function cleanString(str: string): string {
+  return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
 
-  // Fetch articles matching either title case ("Travel", "Digital Culture") or raw slug
+async function getArticlesByCategory(rawSlug: string) {
+  const decodedSlug = decodeURIComponent(rawSlug).trim()
+  const displayName = normalizeCategoryName(decodedSlug)
+  const targetKey = cleanString(decodedSlug)
+
   const { data, error } = await supabase
     .from('articles')
     .select('id, title, slug, excerpt, cover_image, category, created_at, published')
-    .or(`category.ilike.${displayName},category.ilike.${spacedName},category.ilike.${decoded}`)
     .order('created_at', { ascending: false })
 
   if (error || !data) {
-    console.error('Supabase query error:', error)
     return { articles: [], displayName }
   }
 
-  // Filter for published items (handles boolean true, string 'true', or omitted published flag)
-  const publishedArticles = data.filter((item) => item.published !== false)
+  const filtered = data.filter((item) => {
+    const isPublished = item.published === true
+    const catValue = typeof item.category === 'string' ? item.category : ''
+    const itemCatClean = cleanString(catValue)
 
-  return { articles: publishedArticles, displayName }
+    return isPublished && itemCatClean === targetKey
+  })
+
+  return { articles: filtered, displayName }
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
-  const displayName = formatDisplayName(slug)
+  const displayName = normalizeCategoryName(slug)
 
   return {
     title: `${displayName} Dispatches | Wanderline`,
@@ -101,7 +107,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                       src={article.cover_image}
                       alt={article.title}
                       fill
-                      quality={75}
+                      quality={65}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
                       className="object-cover hover:scale-105 transition duration-500"
                     />

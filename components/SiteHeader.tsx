@@ -15,7 +15,6 @@ const CATEGORIES = [
 
 export default function SiteHeader({ variant = 'home', logoAsH1 = false }: SiteHeaderProps) {
   const isGradient = variant === 'gradient'
-
   const LogoComponent = logoAsH1 ? 'h1' : 'span'
 
   return (

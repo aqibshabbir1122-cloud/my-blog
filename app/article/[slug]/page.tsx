@@ -27,7 +27,6 @@ async function getArticleData(slug: string) {
     return null
   }
 
-  // Fetch reaction counts for this article if stored in reactions table
   const { data: reactions } = await supabase
     .from('reactions')
     .select('reaction_type, count')
@@ -148,7 +147,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             priority
             fetchPriority="high"
             loading="eager"
-            sizes="(max-width: 896px) 100vw, 896px"
+            quality={65}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 896px"
             className="object-cover"
           />
         </div>
@@ -182,6 +182,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                         src={rel.cover_image}
                         alt={rel.title}
                         fill
+                        quality={65}
                         sizes="(max-width: 768px) 100vw, 300px"
                         className="object-cover group-hover:scale-105 transition duration-300"
                       />
