@@ -2,56 +2,129 @@
 
 import { useEffect, useRef } from 'react'
 
-export type AdFormat = 'native-4x1' | 'sidebar' | 'banner' | 'banner-728x90' | 'native'
+export type AdFormat =
+  | 'banner'
+  | 'banner-728x90'
+  | 'sidebar'
+  | 'sidebar-300x250'
+  | 'horizontal'
+  | 'horizontal-468x60'
 
 interface AdSlotProps {
-  format: AdFormat
+  format?: AdFormat
   className?: string
 }
 
-export default function AdSlot({ format, className = '' }: AdSlotProps) {
-  const adContainerRef = useRef<HTMLDivElement>(null)
+const ADSTERRA_CONFIG: Record<
+  AdFormat,
+  { key: string; width: number; height: number; format: string }
+> = {
+  banner: {
+    key: 'adsterra_banner_slot_key_here',
+    width: 728,
+    height: 90,
+    format: 'iframe',
+  },
+  'banner-728x90': {
+    key: 'adsterra_banner_slot_key_here',
+    width: 728,
+    height: 90,
+    format: 'iframe',
+  },
+  sidebar: {
+    key: 'adsterra_sidebar_slot_key_here',
+    width: 300,
+    height: 250,
+    format: 'iframe',
+  },
+  'sidebar-300x250': {
+    key: 'adsterra_sidebar_slot_key_here',
+    width: 300,
+    height: 250,
+    format: 'iframe',
+  },
+  horizontal: {
+    key: 'adsterra_horizontal_slot_key_here',
+    width: 468,
+    height: 60,
+    format: 'iframe',
+  },
+  'horizontal-468x60': {
+    key: 'adsterra_horizontal_slot_key_here',
+    width: 468,
+    height: 60,
+    format: 'iframe',
+  },
+}
+
+export default function AdSlot({ format = 'banner', className = '' }: AdSlotProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isLoadedRef = useRef(false)
+  const config = ADSTERRA_CONFIG[format] || ADSTERRA_CONFIG['banner']
 
   useEffect(() => {
+    if (isLoadedRef.current || !containerRef.current) return
+
     const loadAd = () => {
-      if (!adContainerRef.current) return
+      if (!containerRef.current || isLoadedRef.current) return
+      isLoadedRef.current = true
+
+      try {
+        const confScript = document.createElement('script')
+        confScript.type = 'text/javascript'
+        confScript.text = `
+          atOptions = {
+            'key': '${config.key}',
+            'format': '${config.format}',
+            'height': ${config.height},
+            'width': ${config.width},
+            'params': {}
+          };
+        `
+
+        const invokeScript = document.createElement('script')
+        invokeScript.type = 'text/javascript'
+        invokeScript.async = true
+        invokeScript.src = `//www.highperformanceformat.com/${config.key}/invoke.js`
+
+        containerRef.current.appendChild(confScript)
+        containerRef.current.appendChild(invokeScript)
+      } catch (err) {
+        console.error('Adsterra initialization error:', err)
+      }
     }
 
-    if ('requestIdleCallback' in window) {
-      const idleId = window.requestIdleCallback(loadAd, { timeout: 2000 })
-      return () => window.cancelIdleCallback(idleId)
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const handle = (window as any).requestIdleCallback(loadAd, { timeout: 2500 })
+      return () => {
+        if ('cancelIdleCallback' in window) {
+          ;(window as any).cancelIdleCallback(handle)
+        }
+      }
     } else {
-      const timerId = setTimeout(loadAd, 1500)
-      return () => clearTimeout(timerId)
+      const timer = setTimeout(loadAd, 1500)
+      return () => clearTimeout(timer)
     }
-  }, [format])
-
-  const getContainerStyles = () => {
-    switch (format) {
-      case 'native-4x1':
-        return 'min-h-[280px] w-full my-8'
-      case 'sidebar':
-        return 'min-h-[250px] w-full my-6'
-      case 'banner':
-      case 'banner-728x90':
-        return 'min-h-[90px] w-full my-6'
-      default:
-        return 'min-h-[250px] w-full'
-    }
-  }
+  }, [config])
 
   return (
     <div
-      className={`flex flex-col items-center justify-center p-4 bg-gray-100/70 rounded-xl border border-gray-200/80 text-center ${getContainerStyles()} ${className}`}
+      className={`my-8 flex flex-col items-center justify-center overflow-hidden transition-opacity duration-300 ${className}`}
     >
-      <span className="text-[10px] uppercase tracking-widest text-gray-700 font-sans font-medium mb-2">
+      <span className="text-[10px] uppercase tracking-widest text-gray-400 mb-1 font-sans select-none">
         Advertisement
       </span>
-      <div ref={adContainerRef} className="w-full flex items-center justify-center">
-        <span className="text-xs text-gray-600 font-serif italic">
-          Sponsor Placement
-        </span>
-      </div>
+
+      <div
+        ref={containerRef}
+        style={{
+          minWidth: `${Math.min(config.width, 300)}px`,
+          minHeight: `${config.height}px`,
+          maxWidth: `${config.width}px`,
+          width: '100%',
+        }}
+        className="flex items-center justify-center bg-gray-50/50 rounded-lg border border-gray-100"
+      />
     </div>
   )
 }
