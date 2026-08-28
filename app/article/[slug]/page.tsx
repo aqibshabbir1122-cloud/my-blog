@@ -38,18 +38,14 @@ async function getArticlesByCategory(rawSlug: string) {
   }
 
   const filtered = data.filter((item) => {
-    // Check if the article is published (boolean TRUE or truthy)
+    // published boolean check
     const isPublished = item.published === true
 
     const catValue = typeof item.category === 'string' ? item.category : ''
     const itemCatClean = cleanString(catValue)
 
-    const isMatch =
-      itemCatClean === targetKey ||
-      itemCatClean.includes(targetKey) ||
-      targetKey.includes(itemCatClean)
-
-    return isPublished && isMatch
+    // Strict normalized equality prevents 'culture' from catching 'digitalculture'
+    return isPublished && itemCatClean === targetKey
   })
 
   return { articles: filtered, displayName }
