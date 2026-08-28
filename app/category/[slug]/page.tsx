@@ -19,40 +19,33 @@ function normalizeCategoryName(slug: string): string {
     .join(' ')
 }
 
+function cleanString(str: string): string {
+  return str.toLowerCase().replace(/[-_\s]+/g, '')
+}
+
 async function getArticlesByCategory(rawSlug: string) {
   const decodedSlug = decodeURIComponent(rawSlug).trim()
-  const formattedName = normalizeCategoryName(decodedSlug)
-  const spacedSlug = decodedSlug.replace(/[-_]+/g, ' ')
+  const displayName = normalizeCategoryName(decodedSlug)
+  const targetKey = cleanString(decodedSlug)
 
+  // Fetch published articles
   const { data, error } = await supabase
     .from('articles')
-    .select('id, title, slug, excerpt, cover_image, category, created_at')
-    .or(
-      `category.ilike.${formattedName},category.ilike.${decodedSlug},category.ilike.${spacedSlug}`
-    )
-    .eq('status', 'published')
+    .select('id, title, slug, excerpt, cover_image, category, created_at, status')
     .order('created_at', { ascending: false })
 
-  if (error) {
-    return { articles: [], displayName: formattedName }
+  if (error || !data) {
+    return { articles: [], displayName }
   }
 
-  if (!data || data.length === 0) {
-    const fallback = await supabase
-      .from('articles')
-      .select('id, title, slug, excerpt, cover_image, category, created_at')
-      .or(
-        `category.ilike.${formattedName},category.ilike.${decodedSlug},category.ilike.${spacedSlug}`
-      )
-      .order('created_at', { ascending: false })
+  // Filter matching category resiliently (ignoring casing, dashes, or spaces)
+  const filtered = data.filter((item) => {
+    const isPublished = !item.status || item.status.toLowerCase() === 'published'
+    const categoryKey = cleanString(item.category || '')
+    return isPublished && categoryKey === targetKey
+  })
 
-    return {
-      articles: fallback.data || [],
-      displayName: formattedName,
-    }
-  }
-
-  return { articles: data, displayName: formattedName }
+  return { articles: filtered, displayName }
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
