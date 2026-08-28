@@ -173,7 +173,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               <ShareButtons title={article.title} slug={article.slug} />
             </div>
 
-            {/* Related section with proper H2 hierarchy */}
             <section className="mt-12 pt-8 border-t border-gray-200 not-prose">
               <h2 className="text-xs uppercase tracking-wider text-gray-700 font-semibold mb-4">
                 More in {article.category}
