@@ -9,6 +9,7 @@ import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
 import ReadingProgressBar from '@/components/ReadingProgressBar'
+import TableOfContents from '@/components/TableOfContents'
 import dynamic from 'next/dynamic'
 
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'))
@@ -136,7 +137,33 @@ export async function generateMetadata({
   }
 }
 
-// 3. Inline Markdown Parser
+// 3. Helpers for Headings and Inline Markdown
+function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+}
+
+function extractHeadings(content: string) {
+  const lines = content.split('\n')
+  const headings: { id: string; text: string; level: number }[] = []
+
+  lines.forEach((line) => {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('## ')) {
+      const text = trimmed.replace(/^##\s+/, '')
+      headings.push({ id: slugifyHeading(text), text, level: 2 })
+    } else if (trimmed.startsWith('### ')) {
+      const text = trimmed.replace(/^###\s+/, '')
+      headings.push({ id: slugifyHeading(text), text, level: 3 })
+    }
+  })
+
+  return headings
+}
+
 function formatInlineText(text: string): ReactNode[] {
   const tokens = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g)
 
@@ -181,24 +208,28 @@ function renderContentBlocks(content: string) {
   return rawBlocks.map((block, idx) => {
     // Heading 2
     if (block.startsWith('## ')) {
+      const cleanHeading = block.replace(/^##\s+/, '')
       return (
         <h2
           key={idx}
-          className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 mt-10 mb-4 tracking-tight leading-snug"
+          id={slugifyHeading(cleanHeading)}
+          className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 mt-10 mb-4 tracking-tight leading-snug scroll-mt-20"
         >
-          {formatInlineText(block.replace(/^##\s+/, ''))}
+          {formatInlineText(cleanHeading)}
         </h2>
       )
     }
 
     // Heading 3
     if (block.startsWith('### ')) {
+      const cleanHeading = block.replace(/^###\s+/, '')
       return (
         <h3
           key={idx}
-          className="text-xl sm:text-2xl font-serif font-semibold text-gray-900 mt-8 mb-3 tracking-tight"
+          id={slugifyHeading(cleanHeading)}
+          className="text-xl sm:text-2xl font-serif font-semibold text-gray-900 mt-8 mb-3 tracking-tight scroll-mt-20"
         >
-          {formatInlineText(block.replace(/^###\s+/, ''))}
+          {formatInlineText(cleanHeading)}
         </h3>
       )
     }
@@ -267,6 +298,8 @@ export default async function ArticlePage({
   }
 
   const { article, categoryConfig, relatedArticles, recentArticles, reactionCounts } = data
+
+  const headings = extractHeadings(article.content)
 
   const formattedDate = new Date(article.created_at).toLocaleDateString('en-US', {
     month: 'long',
@@ -373,6 +406,9 @@ export default async function ArticlePage({
               </div>
             )}
 
+            {/* Dynamic Table of Contents */}
+            <TableOfContents headings={headings} />
+
             {/* Parsed Body */}
             <div className="prose prose-lg max-w-none text-gray-800">
               {renderContentBlocks(article.content)}
@@ -421,34 +457,36 @@ export default async function ArticlePage({
 
           {/* Sidebar */}
           <aside className="lg:col-span-4 space-y-8">
-            {relatedArticles.length > 0 && (
-              <div
-                className={`p-6 rounded-2xl border ${
-                  categoryConfig?.sidebar_bg || 'bg-white'
-                } ${categoryConfig?.border_color || 'border-gray-200'}`}
-              >
-                <h3 className="text-xs uppercase tracking-wider text-gray-600 font-semibold mb-4">
-                  More in {article.category}
-                </h3>
-                <div className="space-y-4">
-                  {relatedArticles.map((rel) => (
-                    <Link
-                      key={rel.id}
-                      href={`/article/${rel.slug}`}
-                      className="block group"
-                    >
-                      <p className="text-sm font-serif font-medium text-gray-900 group-hover:text-blue-600 transition leading-snug">
-                        {rel.title}
-                      </p>
-                    </Link>
-                  ))}
+            <div className="sticky top-8 space-y-8">
+              {relatedArticles.length > 0 && (
+                <div
+                  className={`p-6 rounded-2xl border ${
+                    categoryConfig?.sidebar_bg || 'bg-white'
+                  } ${categoryConfig?.border_color || 'border-gray-200'}`}
+                >
+                  <h3 className="text-xs uppercase tracking-wider text-gray-600 font-semibold mb-4">
+                    More in {article.category}
+                  </h3>
+                  <div className="space-y-4">
+                    {relatedArticles.map((rel) => (
+                      <Link
+                        key={rel.id}
+                        href={`/article/${rel.slug}`}
+                        className="block group"
+                      >
+                        <p className="text-sm font-serif font-medium text-gray-900 group-hover:text-blue-600 transition leading-snug">
+                          {rel.title}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <NewsletterForm variant="blue" />
+              <NewsletterForm variant="blue" />
 
-            <AdSlot slotId="sidebar-banner" format="rectangle-300x250" />
+              <AdSlot slotId="sidebar-banner" format="rectangle-300x250" />
+            </div>
           </aside>
         </div>
       </main>
