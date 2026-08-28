@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({
-    request: { headers: request.headers },
+  let supabaseResponse = NextResponse.next({
+    request,
   })
 
   const supabase = createServerClient(
@@ -16,30 +15,39 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          supabaseResponse = NextResponse.next({
+            request,
+          })
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options)
           )
         },
       },
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
 
-  const isLoginPage = request.nextUrl.pathname === '/admin/login'
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+  const isAuthPage = request.nextUrl.pathname === '/admin/login'
 
-  if (isAdminRoute && !isLoginPage && !user) {
-    return NextResponse.redirect(new URL('/admin/login', request.url))
+  if (error || !user) {
+    if (!isAuthPage) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+    return supabaseResponse
   }
 
-  if (isLoginPage && user) {
-    return NextResponse.redirect(new URL('/admin', request.url))
+  if (isAuthPage && user) {
+    return NextResponse.redirect(new URL('/admin/messages', request.url))
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
