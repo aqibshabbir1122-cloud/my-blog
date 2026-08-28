@@ -11,7 +11,7 @@ interface CategoryPageProps {
   params: Promise<{ slug: string }>
 }
 
-function normalizeCategoryName(slug: string): string {
+function formatDisplayName(slug: string): string {
   const decoded = decodeURIComponent(slug).trim()
   return decoded
     .split(/[-_]/)
@@ -19,36 +19,32 @@ function normalizeCategoryName(slug: string): string {
     .join(' ')
 }
 
-function stripString(str: string): string {
-  return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '')
-}
-
 async function getArticlesByCategory(rawSlug: string) {
-  const decodedSlug = decodeURIComponent(rawSlug).trim()
-  const displayName = normalizeCategoryName(decodedSlug)
-  const targetKey = stripString(decodedSlug)
+  const decoded = decodeURIComponent(rawSlug).trim()
+  const displayName = formatDisplayName(decoded)
+  const spacedName = decoded.replace(/[-_]+/g, ' ')
 
+  // Fetch articles matching either title case ("Travel", "Digital Culture") or raw slug
   const { data, error } = await supabase
     .from('articles')
-    .select('id, title, slug, excerpt, cover_image, category, created_at, status')
+    .select('id, title, slug, excerpt, cover_image, category, created_at, published')
+    .or(`category.ilike.${displayName},category.ilike.${spacedName},category.ilike.${decoded}`)
     .order('created_at', { ascending: false })
 
   if (error || !data) {
+    console.error('Supabase query error:', error)
     return { articles: [], displayName }
   }
 
-  const filtered = data.filter((item) => {
-    const isPublished = !item.status || item.status.toLowerCase() === 'published'
-    const itemKey = stripString(item.category)
-    return isPublished && itemKey === targetKey
-  })
+  // Filter for published items (handles boolean true, string 'true', or omitted published flag)
+  const publishedArticles = data.filter((item) => item.published !== false)
 
-  return { articles: filtered, displayName }
+  return { articles: publishedArticles, displayName }
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
-  const displayName = normalizeCategoryName(slug)
+  const displayName = formatDisplayName(slug)
 
   return {
     title: `${displayName} Dispatches | Wanderline`,
