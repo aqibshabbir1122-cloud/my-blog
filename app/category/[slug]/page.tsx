@@ -19,16 +19,15 @@ function normalizeCategoryName(slug: string): string {
     .join(' ')
 }
 
-function cleanString(str: string): string {
-  return str.toLowerCase().replace(/[-_\s]+/g, '')
+function stripString(str: string): string {
+  return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
 async function getArticlesByCategory(rawSlug: string) {
   const decodedSlug = decodeURIComponent(rawSlug).trim()
   const displayName = normalizeCategoryName(decodedSlug)
-  const targetKey = cleanString(decodedSlug)
+  const targetKey = stripString(decodedSlug)
 
-  // Fetch published articles
   const { data, error } = await supabase
     .from('articles')
     .select('id, title, slug, excerpt, cover_image, category, created_at, status')
@@ -38,11 +37,10 @@ async function getArticlesByCategory(rawSlug: string) {
     return { articles: [], displayName }
   }
 
-  // Filter matching category resiliently (ignoring casing, dashes, or spaces)
   const filtered = data.filter((item) => {
     const isPublished = !item.status || item.status.toLowerCase() === 'published'
-    const categoryKey = cleanString(item.category || '')
-    return isPublished && categoryKey === targetKey
+    const itemKey = stripString(item.category)
+    return isPublished && itemKey === targetKey
   })
 
   return { articles: filtered, displayName }
