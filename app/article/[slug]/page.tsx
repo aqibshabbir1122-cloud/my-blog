@@ -92,7 +92,7 @@ function renderMarkdownBlocks(content: string) {
       return (
         <blockquote
           key={idx}
-          className="border-l-2 border-amber-700 pl-4 my-6 italic text-gray-700 font-serif"
+          className="border-l-2 border-amber-800 pl-4 my-6 italic text-gray-800 font-serif"
         >
           {text}
         </blockquote>
@@ -131,13 +131,23 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       <main className="max-w-4xl mx-auto px-6 py-10">
         <header className="mb-8">
-          <span className="text-xs uppercase tracking-widest text-amber-700 font-semibold block mb-2">
-            {article.category}
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-900 leading-tight mb-4">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-xs uppercase tracking-widest text-amber-800 font-semibold block">
+              {article.category}
+            </span>
+            <span className="text-gray-400">•</span>
+            <time className="text-xs text-gray-700 font-medium">
+              {new Date(article.created_at).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </time>
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-950 leading-tight mb-4">
             {article.title}
           </h1>
-          <p className="text-lg text-gray-600 font-serif leading-relaxed mb-6">
+          <p className="text-lg text-gray-700 font-serif leading-relaxed mb-6">
             {article.excerpt}
           </p>
           <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
@@ -146,6 +156,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               alt={article.title}
               fill
               priority
+              quality={80}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 896px"
               className="object-cover"
             />
@@ -161,6 +172,13 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             <div className="mt-8 pt-6 border-t border-gray-200 not-prose">
               <ShareButtons title={article.title} slug={article.slug} />
             </div>
+
+            {/* Related section with proper H2 hierarchy */}
+            <section className="mt-12 pt-8 border-t border-gray-200 not-prose">
+              <h2 className="text-xs uppercase tracking-wider text-gray-700 font-semibold mb-4">
+                More in {article.category}
+              </h2>
+            </section>
           </article>
 
           <aside className="hidden lg:block space-y-8">
