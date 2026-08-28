@@ -260,7 +260,7 @@ export default function AdminDashboardPage() {
                             target="_blank"
                             className="text-xs text-gray-500 hover:text-gray-900 transition"
                           >
-                            View &nearr;
+                            View ↗
                           </Link>
                         )}
                         <Link
