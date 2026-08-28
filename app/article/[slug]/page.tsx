@@ -1,197 +1,165 @@
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
-import AdSlot from '@/components/AdSlot'
-import TableOfContents from '@/components/TableOfContents'
-import ShareButtons from '@/components/ShareButtons'
-import ReadingProgress from '@/components/ReadingProgress'
 
 export const revalidate = 3600
 
-interface ArticlePageProps {
+interface CategoryPageProps {
   params: Promise<{ slug: string }>
 }
 
-async function getArticle(rawSlug: string) {
-  const cleanSlug = decodeURIComponent(rawSlug).trim()
-
-  let { data } = await supabase
-    .from('articles')
-    .select('id, title, slug, content, excerpt, cover_image, category, created_at')
-    .ilike('slug', cleanSlug)
-    .eq('status', 'published')
-    .maybeSingle()
-
-  if (!data) {
-    const fallback = await supabase
-      .from('articles')
-      .select('id, title, slug, content, excerpt, cover_image, category, created_at')
-      .ilike('slug', cleanSlug)
-      .maybeSingle()
-    data = fallback.data
-  }
-
-  return data || null
+function normalizeCategoryName(slug: string): string {
+  const decoded = decodeURIComponent(slug).trim()
+  return decoded
+    .split(/[-_]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
 }
 
-export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+function cleanString(str: string): string {
+  return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+async function getArticlesByCategory(rawSlug: string) {
+  const decodedSlug = decodeURIComponent(rawSlug).trim()
+  const displayName = normalizeCategoryName(decodedSlug)
+  const targetKey = cleanString(decodedSlug)
+
+  const { data, error } = await supabase
+    .from('articles')
+    .select('id, title, slug, excerpt, cover_image, category, created_at, published')
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    return { articles: [], displayName }
+  }
+
+  const filtered = data.filter((item) => {
+    // Check if the article is published (boolean TRUE or truthy)
+    const isPublished = item.published === true
+
+    const catValue = typeof item.category === 'string' ? item.category : ''
+    const itemCatClean = cleanString(catValue)
+
+    const isMatch =
+      itemCatClean === targetKey ||
+      itemCatClean.includes(targetKey) ||
+      targetKey.includes(itemCatClean)
+
+    return isPublished && isMatch
+  })
+
+  return { articles: filtered, displayName }
+}
+
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
-  const article = await getArticle(slug)
-  if (!article) return { title: 'Story Not Found | Wanderline' }
+  const displayName = normalizeCategoryName(slug)
 
   return {
-    title: `${article.title} | Wanderline`,
-    description: article.excerpt,
+    title: `${displayName} Dispatches | Wanderline`,
+    description: `Explore in-depth articles, investigative reports, and dispatches in ${displayName}.`,
     alternates: {
-      canonical: `https://www.wanderline.site/article/${article.slug}`,
-    },
-    openGraph: {
-      title: article.title,
-      description: article.excerpt,
-      url: `https://www.wanderline.site/article/${article.slug}`,
-      images: [{ url: article.cover_image }],
-      type: 'article',
+      canonical: `https://www.wanderline.site/category/${slug}`,
     },
   }
 }
 
-function renderMarkdownBlocks(content: string) {
-  const blocks = content.split(/\n\n+/)
-
-  return blocks.map((block, idx) => {
-    const trimmed = block.trim()
-
-    if (trimmed.startsWith('## ')) {
-      const text = trimmed.replace(/^##\s+/, '')
-      const id = text
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-
-      return (
-        <h2
-          key={idx}
-          id={id}
-          className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 mt-10 mb-4 scroll-mt-24"
-        >
-          {text}
-        </h2>
-      )
-    }
-
-    if (trimmed.startsWith('### ')) {
-      const text = trimmed.replace(/^###\s+/, '')
-      return (
-        <h3 key={idx} className="text-xl font-serif font-bold text-gray-900 mt-8 mb-3">
-          {text}
-        </h3>
-      )
-    }
-
-    if (trimmed.startsWith('>')) {
-      const text = trimmed.replace(/^>\s*/, '')
-      return (
-        <blockquote
-          key={idx}
-          className="border-l-2 border-amber-800 pl-4 my-6 italic text-gray-800 font-serif"
-        >
-          {text}
-        </blockquote>
-      )
-    }
-
-    if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
-      const items = trimmed.split('\n').map((item) => item.replace(/^[\*\-]\s+/, ''))
-      return (
-        <ul key={idx} className="list-disc pl-5 my-4 space-y-2 text-gray-800 font-serif">
-          {items.map((item, itemIdx) => (
-            <li key={itemIdx}>{item}</li>
-          ))}
-        </ul>
-      )
-    }
-
-    return (
-      <p key={idx} className="my-4 text-gray-800 font-serif leading-relaxed text-base">
-        {trimmed}
-      </p>
-    )
-  })
-}
-
-export default async function ArticlePage({ params }: ArticlePageProps) {
+export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params
-  const article = await getArticle(slug)
-
-  if (!article) notFound()
+  const { articles, displayName } = await getArticlesByCategory(slug)
 
   return (
-    <div className="bg-[#faf9f6] min-h-screen">
-      <ReadingProgress />
-      <SiteHeader variant="plain" />
+    <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between">
+      <div>
+        <SiteHeader variant="plain" />
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
-        <header className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-xs uppercase tracking-widest text-amber-800 font-semibold block">
-              {article.category}
+        <main className="max-w-6xl mx-auto px-6 py-12">
+          <header className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-xs uppercase tracking-widest text-amber-800 font-semibold block mb-2">
+              Category
             </span>
-            <span className="text-gray-400">•</span>
-            <time className="text-xs text-gray-700 font-medium">
-              {new Date(article.created_at).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </time>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-950 leading-tight mb-4">
-            {article.title}
-          </h1>
-          <p className="text-lg text-gray-700 font-serif leading-relaxed mb-6">
-            {article.excerpt}
-          </p>
-          <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
-            <Image
-              src={article.cover_image}
-              alt={article.title}
-              fill
-              priority
-              loading="eager"
-              fetchPriority="high"
-              quality={70}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 85vw, 896px"
-              className="object-cover"
-            />
-          </div>
-        </header>
+            <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-950 capitalize">
+              {displayName}
+            </h1>
+          </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10">
-          <article className="prose prose-gray max-w-none">
-            {renderMarkdownBlocks(article.content)}
-
-            <AdSlot format="native-4x1" />
-
-            <div className="mt-8 pt-6 border-t border-gray-200 not-prose">
-              <ShareButtons title={article.title} slug={article.slug} />
+          {articles.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-700 font-serif text-lg">
+                No articles published in this category yet.
+              </p>
+              <Link
+                href="/"
+                className="mt-6 inline-flex items-center text-sm font-semibold text-amber-800 hover:text-amber-900 underline underline-offset-4"
+              >
+                Return to all dispatches
+              </Link>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {articles.map((article) => (
+                <article
+                  key={article.id}
+                  className="bg-white rounded-2xl overflow-hidden border border-gray-200/80 hover:shadow-lg transition flex flex-col"
+                >
+                  <Link
+                    href={`/article/${article.slug}`}
+                    className="relative w-full aspect-[16/10] block bg-gray-100 overflow-hidden"
+                  >
+                    <Image
+                      src={article.cover_image}
+                      alt={article.title}
+                      fill
+                      quality={75}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
+                      className="object-cover hover:scale-105 transition duration-500"
+                    />
+                  </Link>
 
-            <section className="mt-12 pt-8 border-t border-gray-200 not-prose">
-              <h2 className="text-xs uppercase tracking-wider text-gray-700 font-semibold mb-4">
-                More in {article.category}
-              </h2>
-            </section>
-          </article>
+                  <div className="p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-[11px] uppercase tracking-wider text-amber-800 font-semibold">
+                          {article.category}
+                        </span>
+                        <span className="text-gray-400">•</span>
+                        <time className="text-[11px] text-gray-700 font-medium">
+                          {new Date(article.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </time>
+                      </div>
 
-          <aside className="hidden lg:block space-y-8">
-            <TableOfContents content={article.content} />
-            <AdSlot format="sidebar" />
-          </aside>
-        </div>
-      </main>
+                      <h2 className="text-xl font-serif font-bold text-gray-950 mb-2 leading-snug hover:text-amber-900 transition">
+                        <Link href={`/article/${article.slug}`}>
+                          {article.title}
+                        </Link>
+                      </h2>
+
+                      <p className="text-sm text-gray-700 font-serif line-clamp-3 leading-relaxed mb-4">
+                        {article.excerpt}
+                      </p>
+                    </div>
+
+                    <Link
+                      href={`/article/${article.slug}`}
+                      className="text-xs uppercase tracking-wider text-amber-800 font-semibold hover:text-amber-950 inline-flex items-center gap-1 mt-auto"
+                    >
+                      Read story &rarr;
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
 
       <SiteFooter />
     </div>
