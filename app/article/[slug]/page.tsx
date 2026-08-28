@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import ReadingProgressBar from '@/components/ReadingProgressBar'
-import ShareButtons from '@/components/ShareButtons'
-import ReactionBar from '@/components/ReactionBar'
-import NewsletterForm from '@/components/NewsletterForm'
+import dynamic from 'next/dynamic'
+
+const ShareButtons = dynamic(() => import('@/components/ShareButtons'))
+const ReactionBar = dynamic(() => import('@/components/ReactionBar'))
+const NewsletterForm = dynamic(() => import('@/components/NewsletterForm'))
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 

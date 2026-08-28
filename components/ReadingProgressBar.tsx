@@ -1,18 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 export default function ReadingProgressBar({ color }: { color: string }) {
   const [progress, setProgress] = useState(0)
+  const ticking = useRef(false)
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
-      const scrolled = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
-      setProgress(scrolled)
+      if (!ticking.current) {
+        window.requestAnimationFrame(() => {
+          const scrollTop = window.scrollY
+          const docHeight = document.documentElement.scrollHeight - window.innerHeight
+          const scrolled = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
+          setProgress(scrolled)
+          ticking.current = false
+        })
+        ticking.current = true
+      }
     }
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
