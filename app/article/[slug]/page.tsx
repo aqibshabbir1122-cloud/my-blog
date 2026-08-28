@@ -15,16 +15,28 @@ interface ArticlePageProps {
   params: Promise<{ slug: string }>
 }
 
-async function getArticle(slug: string) {
-  const { data, error } = await supabase
+async function getArticle(rawSlug: string) {
+  const cleanSlug = decodeURIComponent(rawSlug).trim()
+
+  // Primary fetch: Case-insensitive slug matching published articles
+  let { data, error } = await supabase
     .from('articles')
     .select('id, title, slug, content, excerpt, cover_image, category, created_at')
-    .eq('slug', slug)
+    .ilike('slug', cleanSlug)
     .eq('status', 'published')
-    .single()
+    .maybeSingle()
 
-  if (error || !data) return null
-  return data
+  // Fallback fetch: If status column is empty or unpopulated
+  if (!data) {
+    const fallback = await supabase
+      .from('articles')
+      .select('id, title, slug, content, excerpt, cover_image, category, created_at')
+      .ilike('slug', cleanSlug)
+      .maybeSingle()
+    data = fallback.data
+  }
+
+  return data || null
 }
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
