@@ -1,21 +1,15 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
 import TableOfContents from '@/components/TableOfContents'
+import ShareButtons from '@/components/ShareButtons'
+import ReadingProgress from '@/components/ReadingProgress'
 
 export const revalidate = 3600
-
-const ShareButtons = dynamic(() => import('@/components/ShareButtons'), {
-  ssr: false,
-})
-const ReadingProgress = dynamic(() => import('@/components/ReadingProgress'), {
-  ssr: false,
-})
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>
