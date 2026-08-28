@@ -18,15 +18,13 @@ interface ArticlePageProps {
 async function getArticle(rawSlug: string) {
   const cleanSlug = decodeURIComponent(rawSlug).trim()
 
-  // Primary fetch: Case-insensitive slug matching published articles
-  let { data, error } = await supabase
+  let { data } = await supabase
     .from('articles')
     .select('id, title, slug, content, excerpt, cover_image, category, created_at')
     .ilike('slug', cleanSlug)
     .eq('status', 'published')
     .maybeSingle()
 
-  // Fallback fetch: If status column is empty or unpopulated
   if (!data) {
     const fallback = await supabase
       .from('articles')
@@ -162,8 +160,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               alt={article.title}
               fill
               priority
-              quality={80}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 896px"
+              quality={70}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 85vw, 896px"
               className="object-cover"
             />
           </div>

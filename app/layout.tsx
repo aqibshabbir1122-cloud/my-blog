@@ -1,50 +1,42 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import type { Metadata } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
+import './globals.css'
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.wanderline.site'),
-  title: {
-    default: "Wanderline — Stories from every corner of the world",
-    template: "%s | Wanderline",
-  },
-  description: "Travel notes, world events, and the crime and culture stories behind them.",
-  openGraph: {
-    title: "Wanderline — Stories from every corner of the world",
-    description: "Travel notes, world events, and the crime and culture stories behind them.",
-    url: 'https://www.wanderline.site',
-    siteName: 'Wanderline',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "Wanderline — Stories from every corner of the world",
-    description: "Travel notes, world events, and the crime and culture stories behind them.",
-  },
-  alternates: {
-    canonical: 'https://www.wanderline.site',
-  },
-};
+  title: 'Wanderline | Global Dispatches on Travel, Culture & Tech',
+  description:
+    'Independent dispatches exploring unseen travel, emerging culture, investigative stories, and digital infrastructure.',
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}<Analytics /><SpeedInsights /></body>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://cdn.pixabay.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://cdn.pixabay.com" />
+      </head>
+      <body className="min-h-full flex flex-col bg-[#faf9f6] text-gray-900 font-sans">
+        {children}
+      </body>
     </html>
-  );
+  )
 }
