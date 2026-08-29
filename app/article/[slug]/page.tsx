@@ -2,18 +2,21 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import dynamicImport from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
-import StickyAd from '@/components/StickyAd'
-import ReadingProgress from '@/components/ReadingProgress'
-import ReactionBar from '@/components/ReactionBar'
-import ShareButtons from '@/components/ShareButtons'
-import NewsletterForm from '@/components/NewsletterForm'
 import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
+
+// Dynamic client components with SSR disabled to prevent runtime crashes
+const ReadingProgress = dynamicImport(() => import('@/components/ReadingProgress'), { ssr: false })
+const StickyAd = dynamicImport(() => import('@/components/StickyAd'), { ssr: false })
+const ReactionBar = dynamicImport(() => import('@/components/ReactionBar'), { ssr: false })
+const ShareButtons = dynamicImport(() => import('@/components/ShareButtons'), { ssr: false })
+const NewsletterForm = dynamicImport(() => import('@/components/NewsletterForm'), { ssr: false })
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -108,7 +111,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
   return (
     <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900 relative">
-      {/* 1. Google NewsArticle Structured Data */}
+      {/* 1. Google NewsArticle Schema */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -117,14 +120,14 @@ export default async function ArticlePage({ params }: PageProps) {
       {/* 2. Top Scroll Progress Bar */}
       <ReadingProgress />
 
-      {/* 3. Floating / Dismissible Bottom Ad Container with Cross Mark */}
+      {/* 3. Floating Dismissible Ad Container */}
       <StickyAd />
 
       <div>
         <SiteHeader variant="plain" />
 
         <main className="max-w-4xl mx-auto px-6 py-12">
-          {/* Breadcrumb & Metadata Header */}
+          {/* Metadata Row */}
           <div className="mb-6 flex items-center space-x-2 text-xs uppercase tracking-widest font-mono text-zinc-500">
             <Link
               href={`/category/${categorySlug}`}
@@ -149,7 +152,7 @@ export default async function ArticlePage({ params }: PageProps) {
             {article.title}
           </h1>
 
-          {/* Excerpt Lead */}
+          {/* Excerpt */}
           {article.excerpt && (
             <p className="text-lg sm:text-xl font-serif italic text-gray-700 leading-relaxed mb-8 border-l-2 border-amber-800 pl-4">
               {article.excerpt}
@@ -170,29 +173,30 @@ export default async function ArticlePage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Top In-Article Ad Banner */}
+          {/* Top In-Article Ad Slot */}
           <div className="my-8">
             <AdSlot format="banner" className="w-full flex justify-center" />
           </div>
 
-          {/* Markdown Content Body */}
+          {/* Markdown Content */}
           <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed prose-headings:font-serif prose-headings:font-bold prose-headings:text-gray-950 prose-a:text-amber-800 prose-a:underline hover:prose-a:text-amber-950 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-ul:list-disc prose-ol:list-decimal prose-img:rounded-xl">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {article.content || ''}
             </ReactMarkdown>
           </article>
 
-{/* Reaction Bar & Social Sharing Actions */}
-<div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
-  <ReactionBar {...({ articleId: article.id, slug: article.slug } as any)} />
-  <ShareButtons {...({ title: article.title, url: articleUrl } as any)} />
-</div>
-          {/* Newsletter Subscription Box */}
+          {/* Reactions & Sharing */}
+          <div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
+            <ReactionBar {...({ articleId: article.id, slug: article.slug } as any)} />
+            <ShareButtons {...({ title: article.title, url: articleUrl } as any)} />
+          </div>
+
+          {/* Newsletter Box */}
           <div className="my-12">
             <NewsletterForm />
           </div>
 
-          {/* Dedicated Bottom Ad Slot */}
+          {/* Dedicated Bottom Full-Width Ad */}
           <section className="mt-8 pt-8 border-t border-zinc-200">
             <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
               <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-400 mb-2">
