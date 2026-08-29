@@ -1,27 +1,63 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Inter } from 'next/font/google'
+import { Inter, Playfair_Display } from 'next/font/google'
 import './globals.css'
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-serif',
-})
 
 const inter = Inter({
   subsets: ['latin'],
-  display: 'swap',
   variable: '--font-sans',
+  display: 'swap',
+})
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.wanderline.site'),
   title: {
-    default: 'Wanderline | Editorial Magazine & Cultural Dispatches',
+    default: 'Wanderline | Global Dispatches & Independent Journalism',
     template: '%s | Wanderline',
   },
   description:
-    'Independent global journalism covering digital culture, international stories, travel, and investigative features.',
-  metadataBase: new URL('https://www.wanderline.site'),
+    'In-depth global dispatches, investigative journalism, digital culture, and field reports.',
+  keywords: [
+    'journalism',
+    'global reporting',
+    'travel dispatches',
+    'investigative culture',
+  ],
+  authors: [{ name: 'Wanderline Editorial' }],
+  creator: 'Wanderline',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://www.wanderline.site',
+    siteName: 'Wanderline',
+    title: 'Wanderline | Global Dispatches',
+    description:
+      'In-depth global dispatches, investigative journalism, and field reports.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Wanderline',
+    description: 'Independent global dispatches and investigative reporting.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'p0U9Wl-GsIZT7wWx4gzL4qI5TLAz9wRjP9cdz7M1ZuM',
+  },
 }
 
 export default function RootLayout({
@@ -30,8 +66,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
-      <body className="bg-[#faf9f6] text-gray-900 antialiased min-h-screen">
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <body className="font-sans antialiased text-gray-900 bg-[#faf9f6]">
         {children}
       </body>
     </html>
