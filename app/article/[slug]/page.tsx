@@ -7,18 +7,19 @@ import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
 import { supabase } from '@/lib/supabase'
 
-interface ArticlePageProps {
+type Props = {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateMetadata({
-  params,
-}: ArticlePageProps): Promise<Metadata> {
-  const { slug } = await params
+export async function generateMetadata(
+  { params }: Props
+): Promise<Metadata> {
+  const resolvedParams = await params
   const { data: article } = await supabase
     .from('articles')
     .select('title, excerpt, cover_image, category')
-    .eq('slug', slug)
+    .eq('slug', resolvedParams.slug)
     .single()
 
   if (!article) {
@@ -29,36 +30,35 @@ export async function generateMetadata({
 
   return {
     title: `${article.title} | Wanderline`,
-    description: article.excerpt,
+    description: article.excerpt || '',
     openGraph: {
       title: article.title,
-      description: article.excerpt,
-      images: [article.cover_image],
+      description: article.excerpt || '',
+      images: article.cover_image ? [article.cover_image] : [],
       type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
       title: article.title,
-      description: article.excerpt,
-      images: [article.cover_image],
+      description: article.excerpt || '',
+      images: article.cover_image ? [article.cover_image] : [],
     },
   }
 }
 
-export default async function ArticlePage({ params }: ArticlePageProps) {
-  const { slug } = await params
+export default async function ArticlePage({ params }: Props) {
+  const resolvedParams = await params
 
   const { data: article, error } = await supabase
     .from('articles')
     .select('*')
-    .eq('slug', slug)
+    .eq('slug', resolvedParams.slug)
     .single()
 
   if (error || !article) {
     notFound()
   }
 
-  // Fetch related articles from same category
   const { data: relatedArticles } = await supabase
     .from('articles')
     .select('id, title, slug, cover_image, reading_time, published_at')
@@ -72,17 +72,17 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <SiteHeader variant="plain" />
 
         <main className="max-w-4xl mx-auto px-6 py-12">
-          {/* Top Breadcrumb & Metadata */}
+          {/* Category & Date Metadata */}
           <div className="flex items-center space-x-2 text-xs uppercase tracking-widest text-amber-800 font-semibold mb-4">
             <Link
-              href={`/category/${article.category.toLowerCase().replace(/\s+/g, '-')}`}
+              href={`/category/${(article.category || 'general').toLowerCase().replace(/\s+/g, '-')}`}
               className="hover:underline"
             >
-              {article.category}
+              {article.category || 'General'}
             </Link>
             <span className="text-gray-400">•</span>
             <time className="text-gray-500 font-mono">
-              {new Date(article.published_at).toLocaleDateString('en-US', {
+              {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric',
@@ -92,45 +92,52 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             <span className="text-gray-500">{article.reading_time || '5 min read'}</span>
           </div>
 
-          {/* Article Title Header */}
+          {/* Title Header */}
           <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-950 leading-tight mb-6">
             {article.title}
           </h1>
 
-          <p className="text-lg sm:text-xl text-gray-700 font-serif italic mb-8 leading-relaxed">
-            {article.excerpt}
-          </p>
+          {article.excerpt && (
+            <p className="text-lg sm:text-xl text-gray-700 font-serif italic mb-8 leading-relaxed">
+              {article.excerpt}
+            </p>
+          )}
 
-          {/* Top Ad Unit */}
+          {/* Top Ad Slot */}
           <AdSlot format="banner" />
 
           {/* Hero Article Image */}
-          <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden mb-12 shadow-sm bg-gray-100">
-            <Image
-              src={article.cover_image}
-              alt={article.title}
-              fill
-              priority
-              quality={65}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 896px"
-              className="object-cover"
-            />
-          </div>
+          {article.cover_image && (
+            <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden mb-12 shadow-sm bg-gray-100">
+              <Image
+                src={article.cover_image}
+                alt={article.title || 'Article cover image'}
+                fill
+                priority
+                quality={65}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 896px"
+                className="object-cover"
+              />
+            </div>
+          )}
 
-          {/* Article Content Body */}
+          {/* Article Body Content */}
           <article className="prose prose-lg prose-amber mx-auto font-serif text-gray-800 leading-relaxed max-w-none">
             <div
               className="space-y-6"
               dangerouslySetInnerHTML={{
-                __html: article.content.replace(/\n\n/g, '</p><p>').replace(/^/, '<p>').concat('</p>'),
+                __html: (article.content || '')
+                  .replace(/\n\n/g, '</p><p>')
+                  .replace(/^/, '<p>')
+                  .concat('</p>'),
               }}
             />
           </article>
 
-          {/* Inline Content Ad Unit */}
+          {/* Inline Content Ad Slot */}
           <AdSlot format="banner-728x90" className="my-12" />
 
-          {/* Related Stories Section */}
+          {/* Related Articles Section */}
           {relatedArticles && relatedArticles.length > 0 && (
             <section className="mt-16 pt-12 border-t border-gray-200">
               <span className="text-xs uppercase tracking-widest text-amber-800 font-semibold block mb-6">
@@ -144,14 +151,16 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                     className="group flex flex-col space-y-3"
                   >
                     <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-gray-100">
-                      <Image
-                        src={rel.cover_image}
-                        alt={rel.title}
-                        fill
-                        quality={65}
-                        sizes="(max-width: 768px) 100vw, 400px"
-                        className="object-cover group-hover:scale-105 transition duration-500"
-                      />
+                      {rel.cover_image && (
+                        <Image
+                          src={rel.cover_image}
+                          alt={rel.title}
+                          fill
+                          quality={65}
+                          sizes="(max-width: 768px) 100vw, 400px"
+                          className="object-cover group-hover:scale-105 transition duration-500"
+                        />
+                      )}
                     </div>
                     <h3 className="font-serif font-bold text-gray-900 group-hover:text-amber-800 transition text-lg leading-snug">
                       {rel.title}
