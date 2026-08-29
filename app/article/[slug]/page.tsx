@@ -5,9 +5,11 @@ import type { Metadata } from 'next'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
+import ReadingProgressBar from '@/components/ReadingProgressBar'
+import SocialShare from '@/components/SocialShare'
 import { supabase } from '@/lib/supabase'
 
-export const revalidate = 3600 // Enable Incremental Static Regeneration (1 hour cache)
+export const revalidate = 3600
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -80,7 +82,8 @@ export default async function ArticlePage({ params }: Props) {
     .neq('id', article.id)
     .limit(2)
 
-  // Structured JSON-LD Schema for Google Discover and Rich Results
+  const articleUrl = `https://www.wanderline.site/article/${article.slug}`
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -108,6 +111,8 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900">
+      <ReadingProgressBar />
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -143,10 +148,13 @@ export default async function ArticlePage({ params }: Props) {
           </h1>
 
           {article.excerpt && (
-            <p className="text-lg sm:text-xl text-gray-700 font-serif italic mb-8 leading-relaxed">
+            <p className="text-lg sm:text-xl text-gray-700 font-serif italic mb-6 leading-relaxed">
               {article.excerpt}
             </p>
           )}
+
+          {/* Share Action Bar */}
+          <SocialShare title={article.title} url={articleUrl} />
 
           {/* Top Ad Slot */}
           <AdSlot format="banner" />
