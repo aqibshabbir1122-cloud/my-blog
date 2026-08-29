@@ -7,9 +7,22 @@ import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
 import { supabase } from '@/lib/supabase'
 
+export const revalidate = 3600 // Enable Incremental Static Regeneration (1 hour cache)
+
 type Props = {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export async function generateStaticParams() {
+  const { data: articles } = await supabase
+    .from('articles')
+    .select('slug')
+    .limit(50)
+
+  return (articles || []).map((article) => ({
+    slug: article.slug,
+  }))
 }
 
 export async function generateMetadata(
@@ -18,7 +31,7 @@ export async function generateMetadata(
   const resolvedParams = await params
   const { data: article } = await supabase
     .from('articles')
-    .select('title, excerpt, cover_image, category')
+    .select('title, excerpt, cover_image, category, published_at')
     .eq('slug', resolvedParams.slug)
     .single()
 
@@ -36,6 +49,7 @@ export async function generateMetadata(
       description: article.excerpt || '',
       images: article.cover_image ? [article.cover_image] : [],
       type: 'article',
+      publishedTime: article.published_at,
     },
     twitter: {
       card: 'summary_large_image',
@@ -66,8 +80,39 @@ export default async function ArticlePage({ params }: Props) {
     .neq('id', article.id)
     .limit(2)
 
+  // Structured JSON-LD Schema for Google Discover and Rich Results
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.title,
+    description: article.excerpt,
+    image: [article.cover_image],
+    datePublished: article.published_at || article.created_at,
+    dateModified: article.updated_at || article.published_at || article.created_at,
+    author: [
+      {
+        '@type': 'Organization',
+        name: 'Wanderline Editorial Staff',
+        url: 'https://www.wanderline.site',
+      },
+    ],
+    publisher: {
+      '@type': 'Organization',
+      name: 'Wanderline',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.wanderline.site/favicon.ico',
+      },
+    },
+  }
+
   return (
-    <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between">
+    <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <div>
         <SiteHeader variant="plain" />
 
