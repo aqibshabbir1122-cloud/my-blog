@@ -1,283 +1,153 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
-import LogoutButton from '@/components/LogoutButton'
+import { useState } from 'react'
+import { publishArticle } from './actions'
 
-interface Article {
-  id: string
-  title: string
-  slug: string
-  category: string
-  published: boolean
-  created_at: string
-  updated_at?: string
-}
+export default function AdminPage() {
+  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<{ success: boolean; text: string } | null>(null)
 
-export default function AdminDashboardPage() {
-  const [articles, setArticles] = useState<Article[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [categories, setCategories] = useState<string[]>([])
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
+  function autoGenerateSlug(e: React.ChangeEvent<HTMLInputElement>) {
+    const slugField = document.getElementById('article-slug') as HTMLInputElement
+    if (slugField && !slugField.dataset.modified) {
+      slugField.value = e.target.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '')
+    }
+  }
 
-  useEffect(() => {
-    fetchArticles()
-  }, [])
-
-  async function fetchArticles() {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setLoading(true)
-    const { data, error } = await supabase
-      .from('articles')
-      .select('id, title, slug, category, published, created_at, updated_at')
-      .order('created_at', { ascending: false })
+    setStatus(null)
 
-    if (data && !error) {
-      setArticles(data)
-      const uniqueCategories = Array.from(new Set(data.map((a) => a.category).filter(Boolean)))
-      setCategories(uniqueCategories)
-    }
+    const form = e.currentTarget
+    const formData = new FormData(form)
+    const response = await publishArticle(formData)
+
     setLoading(false)
-  }
+    setStatus({ success: response.success, text: response.message })
 
-  const togglePublishStatus = async (article: Article) => {
-    setActionLoadingId(article.id)
-    const newStatus = !article.published
-
-    const { error } = await supabase
-      .from('articles')
-      .update({
-        published: newStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', article.id)
-
-    if (!error) {
-      setArticles((prev) =>
-        prev.map((item) =>
-          item.id === article.id ? { ...item, published: newStatus } : item
-        )
-      )
+    if (response.success) {
+      form.reset()
+      const slugField = document.getElementById('article-slug') as HTMLInputElement
+      if (slugField) delete slugField.dataset.modified
     }
-    setActionLoadingId(null)
   }
-
-  const filteredArticles = useMemo(() => {
-    return articles.filter((article) => {
-      const matchesSearch =
-        article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        article.slug.toLowerCase().includes(searchQuery.toLowerCase())
-
-      const matchesStatus =
-        statusFilter === 'all'
-          ? true
-          : statusFilter === 'published'
-          ? article.published
-          : !article.published
-
-      const matchesCategory =
-        categoryFilter === 'all' ? true : article.category === categoryFilter
-
-      return matchesSearch && matchesStatus && matchesCategory
-    })
-  }, [articles, searchQuery, statusFilter, categoryFilter])
-
-  const publishedCount = articles.filter((a) => a.published).length
-  const draftCount = articles.length - publishedCount
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] px-6 py-10">
-      <div className="max-w-5xl mx-auto">
-        {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-serif text-gray-900">Articles Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Manage, search, and publish your dispatches
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <LogoutButton />
-            <Link
-              href="/admin/new"
-              className="bg-gray-900 text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-gray-800 transition"
-            >
-              + New Article
-            </Link>
-          </div>
+    <main className="max-w-3xl mx-auto py-12 px-6">
+      <div className="border-b pb-4 mb-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Wanderline Publishing Studio</h1>
+        <span className="text-xs px-2.5 py-1 bg-zinc-100 rounded font-mono">Server Action Active</span>
+      </div>
+
+      {status && (
+        <div
+          className={`p-4 mb-6 rounded text-sm ${
+            status.success
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}
+        >
+          {status.text}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="block text-sm font-medium mb-1">Title</label>
+          <input
+            name="title"
+            required
+            onChange={autoGenerateSlug}
+            className="w-full px-3 py-2 border rounded-md"
+            placeholder="Article title"
+          />
         </div>
 
-        {/* Filter Controls Bar */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-full md:w-auto">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-                statusFilter === 'all'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              All ({articles.length})
-            </button>
-            <button
-              onClick={() => setStatusFilter('published')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-                statusFilter === 'published'
-                  ? 'bg-white text-emerald-700 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Published ({publishedCount})
-            </button>
-            <button
-              onClick={() => setStatusFilter('draft')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-                statusFilter === 'draft'
-                  ? 'bg-white text-amber-700 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Drafts ({draftCount})
-            </button>
-          </div>
-
-          {/* Search and Category Filter */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Slug</label>
             <input
-              type="text"
-              placeholder="Search title or slug..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3.5 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-gray-900"
+              id="article-slug"
+              name="slug"
+              required
+              onChange={() => {
+                const el = document.getElementById('article-slug')
+                if (el) el.dataset.modified = 'true'
+              }}
+              className="w-full px-3 py-2 border rounded-md font-mono text-sm"
+              placeholder="article-url-slug"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Category</label>
+            <select name="category" className="w-full px-3 py-2 border rounded-md">
+              <option value="Technology">Technology</option>
+              <option value="Finance">Finance</option>
+              <option value="Travel">Travel</option>
+              <option value="Culture">Culture</option>
+            </select>
+          </div>
         </div>
 
-        {/* Article Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-          {loading ? (
-            <div className="py-16 text-center text-sm text-gray-500 font-mono">
-              Loading articles...
-            </div>
-          ) : filteredArticles.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-gray-500 text-sm">No articles matched your filter criteria.</p>
-              {(searchQuery || statusFilter !== 'all' || categoryFilter !== 'all') && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('')
-                    setStatusFilter('all')
-                    setCategoryFilter('all')
-                  }}
-                  className="mt-2 text-xs text-blue-600 hover:underline"
-                >
-                  Reset all filters
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                    <th className="px-6 py-3.5">Title & Path</th>
-                    <th className="px-6 py-3.5">Category</th>
-                    <th className="px-6 py-3.5">Status</th>
-                    <th className="px-6 py-3.5">Created</th>
-                    <th className="px-6 py-3.5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-sm">
-                  {filteredArticles.map((article) => (
-                    <tr key={article.id} className="hover:bg-gray-50/50 transition">
-                      <td className="px-6 py-4">
-                        <Link
-                          href={`/admin/edit/${article.id}`}
-                          className="font-medium text-gray-900 hover:text-blue-600 transition block"
-                        >
-                          {article.title}
-                        </Link>
-                        <span className="text-xs text-gray-400 font-mono">
-                          /article/{article.slug}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md font-medium">
-                          {article.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => togglePublishStatus(article)}
-                          disabled={actionLoadingId === article.id}
-                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition ${
-                            article.published
-                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              article.published ? 'bg-emerald-500' : 'bg-amber-500'
-                            }`}
-                          />
-                          {actionLoadingId === article.id
-                            ? 'Updating...'
-                            : article.published
-                            ? 'Published'
-                            : 'Draft'}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-gray-500">
-                        {new Date(article.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="px-6 py-4 text-right space-x-3">
-                        {article.published && (
-                          <Link
-                            href={`/article/${article.slug}`}
-                            target="_blank"
-                            className="text-xs text-gray-500 hover:text-gray-900 transition"
-                          >
-                            View ↗
-                          </Link>
-                        )}
-                        <Link
-                          href={`/admin/edit/${article.id}`}
-                          className="text-xs font-medium text-blue-600 hover:text-blue-800 transition"
-                        >
-                          Edit
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        <div>
+          <label className="block text-sm font-medium mb-1">Cover Image URL</label>
+          <input
+            name="cover_image"
+            type="url"
+            required
+            className="w-full px-3 py-2 border rounded-md"
+            placeholder="https://images.unsplash.com/..."
+          />
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Excerpt</label>
+          <textarea
+            name="excerpt"
+            rows={2}
+            required
+            className="w-full px-3 py-2 border rounded-md"
+            placeholder="Brief summary for indexing and cards"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Content (Markdown)</label>
+          <textarea
+            name="content"
+            rows={10}
+            required
+            className="w-full px-3 py-2 border rounded-md font-mono text-sm"
+            placeholder="# Write dispatch content here..."
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            id="published"
+            name="published"
+            type="checkbox"
+            defaultChecked
+            className="h-4 w-4"
+          />
+          <label htmlFor="published" className="text-sm font-medium">
+            Publish immediately (triggers cache flush & IndexNow)
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 bg-black text-white rounded-md hover:bg-neutral-800 disabled:opacity-50"
+        >
+          {loading ? 'Publishing & Clearing Cache...' : 'Publish Article'}
+        </button>
+      </form>
+    </main>
   )
 }
