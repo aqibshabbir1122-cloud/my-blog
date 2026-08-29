@@ -30,16 +30,16 @@ export async function POST(req: NextRequest) {
     } else if (body.slug) {
       urlsToIndex = [`https://${HOST}/article/${body.slug}`]
     } else {
-      // If no URLs are provided, fetch the 10 most recent dispatches from Supabase
+      // Fetch the 10 most recent dispatches from Supabase using created_at
       const { data: articles, error } = await supabase
         .from('articles')
         .select('slug')
-        .order('published_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(10)
 
       if (error || !articles) {
         return NextResponse.json(
-          { error: 'Failed to fetch article slugs from database' },
+          { error: 'Failed to fetch article slugs from database', details: error?.message },
           { status: 500 }
         )
       }
