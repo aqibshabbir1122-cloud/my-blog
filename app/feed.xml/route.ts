@@ -5,7 +5,7 @@ export async function GET() {
   const { data: articles } = await supabase
     .from('articles')
     .select('*')
-    .order('published_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(20)
 
   const siteUrl = 'https://www.wanderline.site'
@@ -17,7 +17,7 @@ export async function GET() {
       <title><![CDATA[${item.title}]]></title>
       <link>${siteUrl}/article/${item.slug}</link>
       <guid>${siteUrl}/article/${item.slug}</guid>
-      <pubDate>${new Date(item.published_at || item.created_at).toUTCString()}</pubDate>
+      <pubDate>${new Date(item.created_at).toUTCString()}</pubDate>
       <description><![CDATA[${item.excerpt || ''}]]></description>
       <category>${item.category || 'General'}</category>
     </item>`

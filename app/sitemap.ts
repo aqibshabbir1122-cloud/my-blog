@@ -4,14 +4,14 @@ import { supabase } from '@/lib/supabase'
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.wanderline.site'
 
-  // Fetch all published articles
+  // Fetch all published articles using created_at/updated_at
   const { data: articles } = await supabase
     .from('articles')
-    .select('slug, updated_at, published_at')
+    .select('slug, updated_at, created_at')
 
   const articleUrls = (articles || []).map((article) => ({
     url: `${baseUrl}/article/${article.slug}`,
-    lastModified: new Date(article.updated_at || article.published_at || Date.now()),
+    lastModified: new Date(article.updated_at || article.created_at || Date.now()),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))

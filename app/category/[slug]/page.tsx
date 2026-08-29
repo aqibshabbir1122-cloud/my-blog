@@ -56,9 +56,9 @@ export default async function CategoryPage({ params }: Props) {
 
   const { data: articles, error } = await supabase
     .from('articles')
-    .select('id, title, slug, excerpt, cover_image, published_at, created_at, content, category')
+    .select('id, title, slug, excerpt, cover_image, created_at, content, category')
     .ilike('category', categoryTitle)
-    .order('published_at', { ascending: false })
+    .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error loading category articles:', error)
@@ -129,9 +129,7 @@ export default async function CategoryPage({ params }: Props) {
                       <div>
                         <div className="flex items-center space-x-2 text-[11px] uppercase tracking-widest text-gray-500 font-mono mb-3">
                           <time>
-                            {new Date(
-                              article.published_at || article.created_at
-                            ).toLocaleDateString('en-US', {
+                            {new Date(article.created_at).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric',

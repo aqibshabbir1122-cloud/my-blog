@@ -35,7 +35,7 @@ export async function generateMetadata(
   const resolvedParams = await params
   const { data: article } = await supabase
     .from('articles')
-    .select('title, excerpt, cover_image, category, published_at')
+    .select('title, excerpt, cover_image, category, created_at')
     .eq('slug', resolvedParams.slug)
     .single()
 
@@ -53,7 +53,7 @@ export async function generateMetadata(
       description: article.excerpt || '',
       images: article.cover_image ? [article.cover_image] : [],
       type: 'article',
-      publishedTime: article.published_at,
+      publishedTime: article.created_at,
     },
     twitter: {
       card: 'summary_large_image',
@@ -79,7 +79,7 @@ export default async function ArticlePage({ params }: Props) {
 
   const { data: relatedArticles } = await supabase
     .from('articles')
-    .select('id, title, slug, cover_image, published_at, content, category')
+    .select('id, title, slug, cover_image, created_at, content, category')
     .eq('category', article.category)
     .neq('id', article.id)
     .limit(2)
@@ -93,8 +93,8 @@ export default async function ArticlePage({ params }: Props) {
     headline: article.title,
     description: article.excerpt,
     image: [article.cover_image],
-    datePublished: article.published_at || article.created_at,
-    dateModified: article.updated_at || article.published_at || article.created_at,
+    datePublished: article.created_at,
+    dateModified: article.updated_at || article.created_at,
     author: [
       {
         '@type': 'Organization',
@@ -135,7 +135,7 @@ export default async function ArticlePage({ params }: Props) {
             </Link>
             <span className="text-gray-400">•</span>
             <time className="text-gray-500 font-mono">
-              {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
+              {new Date(article.created_at).toLocaleDateString('en-US', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric',
