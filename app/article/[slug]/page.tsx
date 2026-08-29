@@ -5,45 +5,25 @@ import type { Metadata } from 'next'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
-import StickyAd from '@/components/StickyAd'
-import ReadingProgressBar from '@/components/ReadingProgressBar'
-import SocialShare from '@/components/SocialShare'
 import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
-type Props = {
+type PageProps = {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateStaticParams() {
-  const { data: articles } = await supabase
-    .from('articles')
-    .select('slug')
-    .limit(50)
-
-  return (articles || []).map((article) => ({
-    slug: article.slug,
-  }))
-}
-
-export async function generateMetadata(
-  { params }: Props
-): Promise<Metadata> {
-  const resolvedParams = await params
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
   const { data: article } = await supabase
     .from('articles')
-    .select('title, excerpt, cover_image, category, created_at')
-    .eq('slug', resolvedParams.slug)
+    .select('title, excerpt, cover_image, category, created_at, updated_at')
+    .eq('slug', slug)
     .single()
 
-  if (!article) {
-    return {
-      title: 'Article Not Found | Wanderline',
-    }
-  }
+  if (!article) return { title: 'Article Not Found | Wanderline' }
 
   return {
     title: `${article.title} | Wanderline`,
@@ -51,9 +31,13 @@ export async function generateMetadata(
     openGraph: {
       title: article.title,
       description: article.excerpt || '',
-      images: article.cover_image ? [article.cover_image] : [],
+      url: `https://www.wanderline.site/article/${slug}`,
+      siteName: 'Wanderline',
+      images: article.cover_image ? [{ url: article.cover_image }] : [],
       type: 'article',
       publishedTime: article.created_at,
+      modifiedTime: article.updated_at || article.created_at,
+      section: article.category,
     },
     twitter: {
       card: 'summary_large_image',
@@ -64,58 +48,60 @@ export async function generateMetadata(
   }
 }
 
-export default async function ArticlePage({ params }: Props) {
-  const resolvedParams = await params
+export default async function ArticlePage({ params }: PageProps) {
+  const { slug } = await params
 
   const { data: article, error } = await supabase
     .from('articles')
     .select('*')
-    .eq('slug', resolvedParams.slug)
+    .eq('slug', slug)
     .single()
 
   if (error || !article) {
-    notFound()
+    return notFound()
   }
 
-  const { data: relatedArticles } = await supabase
-    .from('articles')
-    .select('id, title, slug, cover_image, created_at, content, category')
-    .eq('category', article.category)
-    .neq('id', article.id)
-    .limit(2)
+  const readTime = calculateReadingTime ? calculateReadingTime(article.content || '') : '5 min read'
+  const categorySlug = (article.category || 'general').toLowerCase().replace(/\s+/g, '-')
 
-  const articleUrl = `https://www.wanderline.site/article/${article.slug}`
-  const readingTime = calculateReadingTime(article.content)
+  const fallbackImage = 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80'
+  const articleImage = article.cover_image || fallbackImage
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     headline: article.title,
-    description: article.excerpt,
-    image: [article.cover_image],
+    description: article.excerpt || '',
+    image: [articleImage],
     datePublished: article.created_at,
     dateModified: article.updated_at || article.created_at,
     author: [
       {
-        '@type': 'Organization',
-        name: 'Wanderline Editorial Staff',
-        url: 'https://www.wanderline.site',
+        '@type': 'Person',
+        name: 'Wanderline Editorial Desk',
+        url: 'https://www.wanderline.site/about',
       },
     ],
     publisher: {
       '@type': 'Organization',
       name: 'Wanderline',
+      url: 'https://www.wanderline.site',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://www.wanderline.site/favicon.ico',
+        url: 'https://www.wanderline.site/icon.png',
+        width: 512,
+        height: 512,
       },
     },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://www.wanderline.site/article/${article.slug}`,
+    },
+    articleSection: article.category || 'General',
   }
 
   return (
     <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900">
-      <ReadingProgressBar />
-
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -125,112 +111,64 @@ export default async function ArticlePage({ params }: Props) {
         <SiteHeader variant="plain" />
 
         <main className="max-w-4xl mx-auto px-6 py-12">
-          {/* Category & Date Metadata */}
-          <div className="flex items-center space-x-2 text-xs uppercase tracking-widest text-amber-800 font-semibold mb-4">
+          {/* Category & Timestamp Breadcrumb */}
+          <div className="mb-6 flex items-center space-x-2 text-xs uppercase tracking-widest font-mono text-zinc-500">
             <Link
-              href={`/category/${(article.category || 'general').toLowerCase().replace(/\s+/g, '-')}`}
-              className="hover:underline"
+              href={`/category/${categorySlug}`}
+              className="text-amber-800 hover:underline font-semibold"
             >
-              {article.category || 'General'}
+              {article.category}
             </Link>
-            <span className="text-gray-400">•</span>
-            <time className="text-gray-500 font-mono">
+            <span>•</span>
+            <time>
               {new Date(article.created_at).toLocaleDateString('en-US', {
-                month: 'long',
+                month: 'short',
                 day: 'numeric',
                 year: 'numeric',
               })}
             </time>
-            <span className="text-gray-400">•</span>
-            <span className="text-gray-500">{readingTime}</span>
+            <span>•</span>
+            <span>{readTime}</span>
           </div>
 
-          {/* Title Header */}
+          {/* Article Title */}
           <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-950 leading-tight mb-6">
             {article.title}
           </h1>
 
+          {/* Excerpt Lead */}
           {article.excerpt && (
-            <p className="text-lg sm:text-xl text-gray-700 font-serif italic mb-6 leading-relaxed">
+            <p className="text-lg sm:text-xl font-serif italic text-gray-700 leading-relaxed mb-8 border-l-2 border-amber-800 pl-4">
               {article.excerpt}
             </p>
           )}
 
-          {/* Share Action Bar */}
-          <SocialShare title={article.title} url={articleUrl} />
-
-          {/* Top Ad Slot */}
-          <AdSlot format="banner" />
-
-          {/* Hero Article Image */}
+          {/* Featured Image */}
           {article.cover_image && (
-            <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden mb-12 shadow-sm bg-gray-100">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl mb-10 shadow-sm border border-gray-100">
               <Image
                 src={article.cover_image}
-                alt={article.title || 'Article cover image'}
+                alt={article.title}
                 fill
                 priority
-                quality={65}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 896px"
+                sizes="(max-width: 1024px) 100vw, 896px"
                 className="object-cover"
               />
             </div>
           )}
 
-          {/* Article Body Content */}
-          <article className="prose prose-lg prose-amber mx-auto font-serif text-gray-800 leading-relaxed max-w-none">
-            <div
-              className="space-y-6"
-              dangerouslySetInnerHTML={{
-                __html: (article.content || '')
-                  .replace(/\n\n/g, '</p><p>')
-                  .replace(/^/, '<p>')
-                  .concat('</p>'),
-              }}
-            />
+          {/* In-Article Header Ad Slot */}
+          <AdSlot format="banner" className="mb-10" />
+
+          {/* Content Body */}
+          <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed whitespace-pre-wrap">
+            {article.content}
           </article>
 
-          {/* Inline Content Ad Slot */}
-          <AdSlot format="banner-728x90" className="my-12" />
-
-          {/* Related Articles Section */}
-          {relatedArticles && relatedArticles.length > 0 && (
-            <section className="mt-16 pt-12 border-t border-gray-200">
-              <span className="text-xs uppercase tracking-widest text-amber-800 font-semibold block mb-6">
-                Related Dispatches
-              </span>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {relatedArticles.map((rel) => (
-                  <Link
-                    key={rel.id}
-                    href={`/article/${rel.slug}`}
-                    className="group flex flex-col space-y-3"
-                  >
-                    <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-gray-100">
-                      {rel.cover_image && (
-                        <Image
-                          src={rel.cover_image}
-                          alt={rel.title}
-                          fill
-                          quality={65}
-                          sizes="(max-width: 768px) 100vw, 400px"
-                          className="object-cover group-hover:scale-105 transition duration-500"
-                        />
-                      )}
-                    </div>
-                    <h3 className="font-serif font-bold text-gray-900 group-hover:text-amber-800 transition text-lg leading-snug">
-                      {rel.title}
-                    </h3>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+          {/* Bottom Article Footer Ad Slot */}
+          <AdSlot format="banner-728x90" className="mt-12" />
         </main>
       </div>
-
-      {/* Floating Bottom Monetization Bar */}
-      <StickyAd />
 
       <SiteFooter />
     </div>
