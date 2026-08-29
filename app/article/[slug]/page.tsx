@@ -7,6 +7,11 @@ import remarkGfm from 'remark-gfm'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
+import StickyAd from '@/components/StickyAd'
+import ReadingProgress from '@/components/ReadingProgress'
+import ReactionBar from '@/components/ReactionBar'
+import ShareButtons from '@/components/ShareButtons'
+import NewsletterForm from '@/components/NewsletterForm'
 import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
 
@@ -65,9 +70,8 @@ export default async function ArticlePage({ params }: PageProps) {
 
   const readTime = calculateReadingTime ? calculateReadingTime(article.content || '') : '5 min read'
   const categorySlug = (article.category || 'general').toLowerCase().replace(/\s+/g, '-')
-
-  const fallbackImage = 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80'
-  const articleImage = article.cover_image || fallbackImage
+  const articleUrl = `https://www.wanderline.site/article/${article.slug}`
+  const articleImage = article.cover_image || 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80'
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -97,22 +101,30 @@ export default async function ArticlePage({ params }: PageProps) {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://www.wanderline.site/article/${article.slug}`,
+      '@id': articleUrl,
     },
     articleSection: article.category || 'General',
   }
 
   return (
-    <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900">
+    <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900 relative">
+      {/* 1. Google NewsArticle Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
+      {/* 2. Top Scroll Progress Bar */}
+      <ReadingProgress />
+
+      {/* 3. Floating / Dismissible Bottom Ad Container with Cross Mark */}
+      <StickyAd />
+
       <div>
         <SiteHeader variant="plain" />
 
         <main className="max-w-4xl mx-auto px-6 py-12">
+          {/* Breadcrumb & Metadata Header */}
           <div className="mb-6 flex items-center space-x-2 text-xs uppercase tracking-widest font-mono text-zinc-500">
             <Link
               href={`/category/${categorySlug}`}
@@ -132,16 +144,19 @@ export default async function ArticlePage({ params }: PageProps) {
             <span>{readTime}</span>
           </div>
 
+          {/* Article Title */}
           <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-950 leading-tight mb-6">
             {article.title}
           </h1>
 
+          {/* Excerpt Lead */}
           {article.excerpt && (
             <p className="text-lg sm:text-xl font-serif italic text-gray-700 leading-relaxed mb-8 border-l-2 border-amber-800 pl-4">
               {article.excerpt}
             </p>
           )}
 
+          {/* Cover Image */}
           {article.cover_image && (
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl mb-10 shadow-sm border border-gray-100">
               <Image
@@ -155,17 +170,30 @@ export default async function ArticlePage({ params }: PageProps) {
             </div>
           )}
 
+          {/* Top In-Article Ad Banner */}
           <div className="my-8">
             <AdSlot format="banner" className="w-full flex justify-center" />
           </div>
 
+          {/* Markdown Content Body */}
           <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed prose-headings:font-serif prose-headings:font-bold prose-headings:text-gray-950 prose-a:text-amber-800 prose-a:underline hover:prose-a:text-amber-950 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-ul:list-disc prose-ol:list-decimal prose-img:rounded-xl">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {article.content || ''}
             </ReactMarkdown>
           </article>
 
-          <section className="mt-16 pt-8 border-t border-zinc-200">
+{/* Reaction Bar & Social Sharing Actions */}
+<div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
+  <ReactionBar {...({ articleId: article.id, slug: article.slug } as any)} />
+  <ShareButtons {...({ title: article.title, url: articleUrl } as any)} />
+</div>
+          {/* Newsletter Subscription Box */}
+          <div className="my-12">
+            <NewsletterForm />
+          </div>
+
+          {/* Dedicated Bottom Ad Slot */}
+          <section className="mt-8 pt-8 border-t border-zinc-200">
             <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
               <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-400 mb-2">
                 Advertisement
