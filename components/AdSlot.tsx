@@ -20,37 +20,37 @@ const ADSTERRA_CONFIG: Record<
   { key: string; width: number; height: number; format: string }
 > = {
   banner: {
-    key: 'adsterra_banner_slot_key_here',
+    key: '',
     width: 728,
     height: 90,
     format: 'iframe',
   },
   'banner-728x90': {
-    key: 'adsterra_banner_slot_key_here',
+    key: '',
     width: 728,
     height: 90,
     format: 'iframe',
   },
   sidebar: {
-    key: 'adsterra_sidebar_slot_key_here',
+    key: '',
     width: 300,
     height: 250,
     format: 'iframe',
   },
   'sidebar-300x250': {
-    key: 'adsterra_sidebar_slot_key_here',
+    key: '',
     width: 300,
     height: 250,
     format: 'iframe',
   },
   horizontal: {
-    key: 'adsterra_horizontal_slot_key_here',
+    key: '',
     width: 468,
     height: 60,
     format: 'iframe',
   },
   'horizontal-468x60': {
-    key: 'adsterra_horizontal_slot_key_here',
+    key: '',
     width: 468,
     height: 60,
     format: 'iframe',
@@ -63,7 +63,15 @@ export default function AdSlot({ format = 'banner', className = '' }: AdSlotProp
   const config = ADSTERRA_CONFIG[format] || ADSTERRA_CONFIG['banner']
 
   useEffect(() => {
-    if (isLoadedRef.current || !containerRef.current) return
+    // Only execute if a valid non-empty Adsterra key is provided
+    if (
+      !config.key ||
+      config.key.includes('slot_key_here') ||
+      isLoadedRef.current ||
+      !containerRef.current
+    ) {
+      return
+    }
 
     const loadAd = () => {
       if (!containerRef.current || isLoadedRef.current) return
@@ -95,10 +103,13 @@ export default function AdSlot({ format = 'banner', className = '' }: AdSlotProp
     }
 
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      const handle = (window as any).requestIdleCallback(loadAd, { timeout: 2500 })
+      const handle = (window as Window & { requestIdleCallback: Function }).requestIdleCallback(
+        loadAd,
+        { timeout: 2500 }
+      )
       return () => {
         if ('cancelIdleCallback' in window) {
-          ;(window as any).cancelIdleCallback(handle)
+          ;(window as Window & { cancelIdleCallback: Function }).cancelIdleCallback(handle)
         }
       }
     } else {
@@ -111,7 +122,7 @@ export default function AdSlot({ format = 'banner', className = '' }: AdSlotProp
     <div
       className={`my-8 flex flex-col items-center justify-center overflow-hidden transition-opacity duration-300 ${className}`}
     >
-      <span className="text-[10px] uppercase tracking-widest text-gray-400 mb-1 font-sans select-none">
+      <span className="text-[10px] uppercase tracking-widest text-gray-600 mb-1 font-sans select-none">
         Advertisement
       </span>
 
@@ -123,7 +134,7 @@ export default function AdSlot({ format = 'banner', className = '' }: AdSlotProp
           maxWidth: `${config.width}px`,
           width: '100%',
         }}
-        className="flex items-center justify-center bg-gray-50/50 rounded-lg border border-gray-100"
+        className="flex items-center justify-center bg-gray-50/50 rounded-lg border border-gray-200"
       />
     </div>
   )

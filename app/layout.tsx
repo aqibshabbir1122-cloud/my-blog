@@ -1,40 +1,37 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Playfair_Display, Inter } from 'next/font/google'
 import './globals.css'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const playfair = Playfair_Display({
   subsets: ['latin'],
   display: 'swap',
+  variable: '--font-serif',
 })
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
+  variable: '--font-sans',
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.wanderline.site'),
-  title: 'Wanderline | Global Dispatches on Travel, Culture & Tech',
+  title: {
+    default: 'Wanderline | Editorial Magazine & Cultural Dispatches',
+    template: '%s | Wanderline',
+  },
   description:
-    'Independent dispatches exploring unseen travel, emerging culture, investigative stories, and digital infrastructure.',
+    'Independent global journalism covering digital culture, international stories, travel, and investigative features.',
+  metadataBase: new URL('https://www.wanderline.site'),
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <head>
-        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://cdn.pixabay.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://images.unsplash.com" />
-        <link rel="dns-prefetch" href="https://cdn.pixabay.com" />
-      </head>
-      <body className="min-h-full flex flex-col bg-[#faf9f6] text-gray-900 font-sans">
+    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
+      <body className="bg-[#faf9f6] text-gray-900 antialiased min-h-screen">
         {children}
       </body>
     </html>
