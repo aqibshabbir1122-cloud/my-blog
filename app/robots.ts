@@ -1,16 +1,15 @@
 import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://www.wanderline.site'
-
   return {
     rules: [
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/admin/', '/api', '/api/'],
+        disallow: ['/admin/', '/api/'],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: 'https://www.wanderline.site/sitemap.xml',
+    host: 'https://www.wanderline.site',
   }
 }
