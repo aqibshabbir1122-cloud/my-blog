@@ -156,7 +156,7 @@ export default async function ArticlePage({ params }: PageProps) {
             </p>
           )}
 
-          {/* Cover Image */}
+          {/* Cover Image (Optimized for LCP Discovery) */}
           {article.cover_image && (
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl mb-10 shadow-sm border border-gray-100">
               <Image
@@ -164,6 +164,7 @@ export default async function ArticlePage({ params }: PageProps) {
                 alt={article.title}
                 fill
                 priority
+                fetchPriority="high"
                 sizes="(max-width: 1024px) 100vw, 896px"
                 className="object-cover"
               />
@@ -183,25 +184,25 @@ export default async function ArticlePage({ params }: PageProps) {
           </article>
 
           {/* Native Reaction & Sharing Section */}
-<div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
-  <ReactionBar
-    articleSlug={article.slug}
-    initialCounts={article.reactions || {}}
-  />
-  <ShareButtons
-  title={article.title}
-/>
-</div>
+          <div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
+            <ReactionBar
+              articleSlug={article.slug}
+              initialCounts={article.reactions || {}}
+            />
+            <ShareButtons
+              title={article.title}
+            />
+          </div>
 
           {/* Newsletter Box */}
           <div className="my-12">
             <NewsletterForm />
           </div>
 
-          {/* Dedicated Bottom Full-Width Ad Section */}
+          {/* Dedicated Bottom Full-Width Ad Section (WCAG Compliant Contrast) */}
           <section className="mt-8 pt-8 border-t border-zinc-200">
             <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
-              <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-400 mb-2">
+              <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-600 mb-2">
                 Advertisement
               </span>
               <AdSlot format="banner-728x90" className="w-full flex justify-center" />
