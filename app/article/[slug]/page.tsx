@@ -1,7 +1,11 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { Metadata } from 'next'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
@@ -9,77 +13,80 @@ import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
-type PageProps = {
+interface Props {
   params: Promise<{ slug: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params
-  const { data: article } = await supabase
-    .from('articles')
-    .select('title, excerpt, cover_image, category, created_at, updated_at')
-    .eq('slug', slug)
-    .single()
+export default function ArticlePage({ params }: Props) {
+  const [article, setArticle] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [readingProgress, setReadingProgress] = useState(0)
 
-  if (!article) return { title: 'Article Not Found | Wanderline' }
+  // Scroll reading progress calculation
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight
+      if (totalHeight > 0) {
+        const progress = (window.scrollY / totalHeight) * 100
+        setReadingProgress(Math.min(100, Math.max(0, progress)))
+      }
+    }
 
-  return {
-    title: `${article.title} | Wanderline`,
-    description: article.excerpt || '',
-    openGraph: {
-      title: article.title,
-      description: article.excerpt || '',
-      url: `https://www.wanderline.site/article/${slug}`,
-      siteName: 'Wanderline',
-      images: article.cover_image ? [{ url: article.cover_image }] : [],
-      type: 'article',
-      publishedTime: article.created_at,
-      modifiedTime: article.updated_at || article.created_at,
-      section: article.category,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: article.title,
-      description: article.excerpt || '',
-      images: article.cover_image ? [article.cover_image] : [],
-    },
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Fetch article data
+  useEffect(() => {
+    async function loadArticle() {
+      const resolvedParams = await params
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('slug', resolvedParams.slug)
+        .single()
+
+      if (error || !data) {
+        setLoading(false)
+        return
+      }
+
+      setArticle(data)
+      setLoading(false)
+    }
+
+    loadArticle()
+  }, [params])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
-}
 
-export default async function ArticlePage({ params }: PageProps) {
-  const { slug } = await params
-
-  const { data: article, error } = await supabase
-    .from('articles')
-    .select('*')
-    .eq('slug', slug)
-    .single()
-
-  if (error || !article) {
+  if (!article) {
     return notFound()
   }
 
-  const readTime = calculateReadingTime ? calculateReadingTime(article.content || '') : '5 min read'
+  const readTime = calculateReadingTime(article.content || '')
   const categorySlug = (article.category || 'general').toLowerCase().replace(/\s+/g, '-')
-
-  const fallbackImage = 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80'
-  const articleImage = article.cover_image || fallbackImage
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     headline: article.title,
     description: article.excerpt || '',
-    image: [articleImage],
+    image: article.cover_image ? [article.cover_image] : ['https://www.wanderline.site/og-default.jpg'],
     datePublished: article.created_at,
     dateModified: article.updated_at || article.created_at,
     author: [
       {
         '@type': 'Person',
         name: 'Wanderline Editorial Desk',
-        url: 'https://www.wanderline.site/about',
+        url: 'https://www.wanderline.site',
       },
     ],
     publisher: {
@@ -89,29 +96,36 @@ export default async function ArticlePage({ params }: PageProps) {
       logo: {
         '@type': 'ImageObject',
         url: 'https://www.wanderline.site/icon.png',
-        width: 512,
-        height: 512,
       },
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': `https://www.wanderline.site/article/${article.slug}`,
     },
-    articleSection: article.category || 'General',
+    articleSection: article.category,
   }
 
   return (
     <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900">
+      {/* Google SEO JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1.5 z-50 bg-transparent">
+        <div
+          className="h-full bg-amber-800 transition-all duration-75 ease-out"
+          style={{ width: `${readingProgress}%` }}
+        />
+      </div>
+
       <div>
         <SiteHeader variant="plain" />
 
         <main className="max-w-4xl mx-auto px-6 py-12">
-          {/* Category & Timestamp Breadcrumb */}
+          {/* Metadata Row */}
           <div className="mb-6 flex items-center space-x-2 text-xs uppercase tracking-widest font-mono text-zinc-500">
             <Link
               href={`/category/${categorySlug}`}
@@ -131,19 +145,19 @@ export default async function ArticlePage({ params }: PageProps) {
             <span>{readTime}</span>
           </div>
 
-          {/* Article Title */}
+          {/* Title */}
           <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-950 leading-tight mb-6">
             {article.title}
           </h1>
 
-          {/* Excerpt Lead */}
+          {/* Excerpt */}
           {article.excerpt && (
             <p className="text-lg sm:text-xl font-serif italic text-gray-700 leading-relaxed mb-8 border-l-2 border-amber-800 pl-4">
               {article.excerpt}
             </p>
           )}
 
-          {/* Featured Image */}
+          {/* Featured Cover Image */}
           {article.cover_image && (
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl mb-10 shadow-sm border border-gray-100">
               <Image
@@ -157,16 +171,27 @@ export default async function ArticlePage({ params }: PageProps) {
             </div>
           )}
 
-          {/* In-Article Header Ad Slot */}
-          <AdSlot format="banner" className="mb-10" />
+          {/* Top Banner Ad Slot */}
+          <div className="my-8">
+            <AdSlot format="banner" className="w-full flex justify-center" />
+          </div>
 
-          {/* Content Body */}
-          <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed whitespace-pre-wrap">
-            {article.content}
+          {/* Formatted Markdown Content */}
+          <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed prose-headings:font-serif prose-headings:font-bold prose-headings:text-gray-950 prose-a:text-amber-800 prose-a:underline hover:prose-a:text-amber-950 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-ul:list-disc prose-ol:list-decimal prose-img:rounded-xl">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {article.content || ''}
+            </ReactMarkdown>
           </article>
 
-          {/* Bottom Article Footer Ad Slot */}
-          <AdSlot format="banner-728x90" className="mt-12" />
+          {/* Dedicated Bottom Full-Width Ad Slot */}
+          <section className="mt-16 pt-8 border-t border-zinc-200">
+            <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
+              <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-400 mb-2">
+                Advertisement
+              </span>
+              <AdSlot format="banner-728x90" className="w-full flex justify-center" />
+            </div>
+          </section>
         </main>
       </div>
 
