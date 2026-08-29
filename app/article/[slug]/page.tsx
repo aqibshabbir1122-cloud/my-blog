@@ -7,7 +7,6 @@ import remarkGfm from 'remark-gfm'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
-import ReadingProgressBar from '@/components/ReadingProgressBar'
 import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
 
@@ -15,15 +14,15 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 type PageProps = {
-  params: Promise<{ slug: string }>
+  params: { slug: string } | Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params
+  const resolvedParams = await params
   const { data: article } = await supabase
     .from('articles')
     .select('title, excerpt, cover_image, category, created_at, updated_at')
-    .eq('slug', slug)
+    .eq('slug', resolvedParams.slug)
     .single()
 
   if (!article) return { title: 'Article Not Found | Wanderline' }
@@ -34,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: article.title,
       description: article.excerpt || '',
-      url: `https://www.wanderline.site/article/${slug}`,
+      url: `https://www.wanderline.site/article/${resolvedParams.slug}`,
       siteName: 'Wanderline',
       images: article.cover_image ? [{ url: article.cover_image }] : [],
       type: 'article',
@@ -52,12 +51,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ArticlePage({ params }: PageProps) {
-  const { slug } = await params
+  const resolvedParams = await params
 
   const { data: article, error } = await supabase
     .from('articles')
     .select('*')
-    .eq('slug', slug)
+    .eq('slug', resolvedParams.slug)
     .single()
 
   if (error || !article) {
@@ -105,20 +104,15 @@ export default async function ArticlePage({ params }: PageProps) {
 
   return (
     <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900">
-      {/* Schema.org Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Reading Progress Indicator */}
-      <ReadingProgressBar />
-
       <div>
         <SiteHeader variant="plain" />
 
         <main className="max-w-4xl mx-auto px-6 py-12">
-          {/* Category & Timestamp Breadcrumb */}
           <div className="mb-6 flex items-center space-x-2 text-xs uppercase tracking-widest font-mono text-zinc-500">
             <Link
               href={`/category/${categorySlug}`}
@@ -138,19 +132,16 @@ export default async function ArticlePage({ params }: PageProps) {
             <span>{readTime}</span>
           </div>
 
-          {/* Article Title */}
           <h1 className="text-3xl sm:text-5xl font-serif font-bold text-gray-950 leading-tight mb-6">
             {article.title}
           </h1>
 
-          {/* Excerpt Lead */}
           {article.excerpt && (
             <p className="text-lg sm:text-xl font-serif italic text-gray-700 leading-relaxed mb-8 border-l-2 border-amber-800 pl-4">
               {article.excerpt}
             </p>
           )}
 
-          {/* Featured Cover Image */}
           {article.cover_image && (
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl mb-10 shadow-sm border border-gray-100">
               <Image
@@ -164,19 +155,16 @@ export default async function ArticlePage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Top Banner Ad Slot */}
           <div className="my-8">
             <AdSlot format="banner" className="w-full flex justify-center" />
           </div>
 
-          {/* Markdown Content Body */}
           <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed prose-headings:font-serif prose-headings:font-bold prose-headings:text-gray-950 prose-a:text-amber-800 prose-a:underline hover:prose-a:text-amber-950 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-ul:list-disc prose-ol:list-decimal prose-img:rounded-xl">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {article.content || ''}
             </ReactMarkdown>
           </article>
 
-          {/* Dedicated Bottom Full-Width Ad Section */}
           <section className="mt-16 pt-8 border-t border-zinc-200">
             <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
               <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-400 mb-2">
