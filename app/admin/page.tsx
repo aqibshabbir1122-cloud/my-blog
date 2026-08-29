@@ -1,258 +1,310 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { publishArticle } from './actions'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import LogoutButton from '@/components/LogoutButton'
 
-const CATEGORIES = ['Technology', 'Finance', 'Travel', 'Culture', 'Crime', 'Investigation']
+interface Article {
+  id: string
+  title: string
+  slug: string
+  category: string
+  published: boolean
+  created_at: string
+  updated_at?: string
+}
 
-export default function AdminPage() {
-  const [isPending, startTransition] = useTransition()
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
-  
-  const [title, setTitle] = useState('')
-  const [slug, setSlug] = useState('')
-  const [isSlugManual, setIsSlugManual] = useState(false)
-  const [category, setCategory] = useState(CATEGORIES[0])
-  const [coverImage, setCoverImage] = useState('')
-  const [excerpt, setExcerpt] = useState('')
-  const [content, setContent] = useState('')
-  const [published, setPublished] = useState(true)
+export default function AdminDashboardPage() {
+  const [articles, setArticles] = useState<Article[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [categories, setCategories] = useState<string[]>([])
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
-  // Auto-slugify title unless manually edited
-  const handleTitleChange = (val: string) => {
-    setTitle(val)
-    if (!isSlugManual) {
-      setSlug(
-        val
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)+/g, '')
+  const fetchArticles = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('articles')
+      .select('id, title, slug, category, published, created_at, updated_at')
+      .order('created_at', { ascending: false })
+
+    if (data && !error) {
+      setArticles(data)
+      const uniqueCategories = Array.from(
+        new Set(data.map((a) => a.category).filter(Boolean))
       )
+      setCategories(uniqueCategories)
     }
-  }
+    setLoading(false)
+  }, [])
 
-  // Calculate estimated reading time
-  const readingTime = Math.max(1, Math.ceil((content.trim().split(/\s+/).filter(Boolean).length || 1) / 200))
+  useEffect(() => {
+    fetchArticles()
+  }, [fetchArticles])
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setStatus(null)
+  const togglePublishStatus = async (article: Article) => {
+    setActionLoadingId(article.id)
+    const newStatus = !article.published
+    const timestamp = new Date().toISOString()
 
-    const formData = new FormData(e.currentTarget)
+    // 1. Update database record
+    const { error } = await supabase
+      .from('articles')
+      .update({
+        published: newStatus,
+        updated_at: timestamp,
+      })
+      .eq('id', article.id)
 
-    startTransition(async () => {
-      const res = await publishArticle(formData)
-      if (res.success) {
-        setStatus({ type: 'success', message: `Article published successfully! Slug: /article/${res.slug}` })
-        setTitle('')
-        setSlug('')
-        setIsSlugManual(false)
-        setCoverImage('')
-        setExcerpt('')
-        setContent('')
-      } else {
-        setStatus({ type: 'error', message: res.message })
+    if (!error) {
+      setArticles((prev) =>
+        prev.map((item) =>
+          item.id === article.id
+            ? { ...item, published: newStatus, updated_at: timestamp }
+            : item
+        )
+      )
+
+      // 2. Dispatch IndexNow ping when publishing live
+      if (newStatus) {
+        try {
+          await fetch('/api/indexnow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              urls: [`https://www.wanderline.site/article/${article.slug}`],
+            }),
+          })
+        } catch (indexError) {
+          console.error('IndexNow ping error:', indexError)
+        }
       }
-    })
+    }
+
+    setActionLoadingId(null)
   }
+
+  const filteredArticles = useMemo(() => {
+    return articles.filter((article) => {
+      const matchesSearch =
+        article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        article.slug.toLowerCase().includes(searchQuery.toLowerCase())
+
+      const matchesStatus =
+        statusFilter === 'all'
+          ? true
+          : statusFilter === 'published'
+          ? article.published
+          : !article.published
+
+      const matchesCategory =
+        categoryFilter === 'all' ? true : article.category === categoryFilter
+
+      return matchesSearch && matchesStatus && matchesCategory
+    })
+  }, [articles, searchQuery, statusFilter, categoryFilter])
+
+  const publishedCount = articles.filter((a) => a.published).length
+  const draftCount = articles.length - publishedCount
 
   return (
-    <div className="min-h-screen bg-[#0d0f12] text-zinc-100 antialiased py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-8">
-        
-        {/* Header Bar */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-6 gap-4">
+    <div className="min-h-screen bg-[#faf9f6] px-6 py-10">
+      <div className="max-w-5xl mx-auto">
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <h1 className="text-xl font-bold tracking-tight text-white uppercase tracking-wider font-mono">
-                Wanderline / Studio
-              </h1>
-            </div>
-            <p className="text-xs text-zinc-400 mt-1 font-mono">
-              Editorial Terminal & Real-Time ISR Dispatcher
+            <h1 className="text-3xl font-serif text-gray-900">Articles Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Manage, search, and publish your dispatches
             </p>
           </div>
-
           <div className="flex items-center gap-3">
-            <span className="text-xs font-mono px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded">
-              ~{readingTime} min read
-            </span>
-            <span className="text-xs font-mono px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded">
-              {content.length} chars
-            </span>
+            <LogoutButton />
+            <Link
+              href="/admin/new"
+              className="bg-gray-900 text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-gray-800 transition"
+            >
+              + New Article
+            </Link>
           </div>
-        </header>
+        </div>
 
-        {/* Status Toast */}
-        {status && (
-          <div
-            className={`p-4 rounded-lg text-sm border font-mono ${
-              status.type === 'success'
-                ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60'
-                : 'bg-rose-950/40 text-rose-300 border-rose-800/60'
-            }`}
-          >
-            {status.type === 'success' ? '✔ ' : '✖ '}
-            {status.message}
+        {/* Filter Controls Bar */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+          {/* Status Tabs */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+                statusFilter === 'all'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All ({articles.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('published')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+                statusFilter === 'published'
+                  ? 'bg-white text-emerald-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Published ({publishedCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('draft')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+                statusFilter === 'draft'
+                  ? 'bg-white text-amber-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Drafts ({draftCount})
+            </button>
           </div>
-        )}
 
-        {/* Editorial Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Main Content Column (2 Cols) */}
-            <div className="lg:col-span-2 space-y-6">
-              
-              {/* Title Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase font-mono tracking-wider text-zinc-400">
-                  Headline
-                </label>
-                <input
-                  name="title"
-                  value={title}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                  placeholder="Enter investigative title..."
-                  required
-                  className="w-full px-4 py-3 bg-zinc-900/90 border border-zinc-800 rounded-lg text-white placeholder-zinc-500 text-lg font-medium focus:outline-none focus:border-zinc-500 transition-colors"
-                />
-              </div>
+          {/* Search and Category Filter */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              aria-label="Filter by category"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
 
-              {/* Excerpt */}
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase font-mono tracking-wider text-zinc-400">
-                  Deck / Subheading
-                </label>
-                <textarea
-                  name="excerpt"
-                  value={excerpt}
-                  onChange={(e) => setExcerpt(e.target.value)}
-                  rows={2}
-                  placeholder="Brief synopsis for feeds and search engines..."
-                  required
-                  className="w-full px-4 py-2.5 bg-zinc-900/90 border border-zinc-800 rounded-lg text-zinc-200 placeholder-zinc-500 text-sm focus:outline-none focus:border-zinc-500 transition-colors resize-none"
-                />
-              </div>
+            <input
+              type="text"
+              placeholder="Search title or slug..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3.5 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+        </div>
 
-              {/* Markdown Content */}
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase font-mono tracking-wider text-zinc-400 flex justify-between">
-                  <span>Markdown Content</span>
-                  <span className="text-zinc-500">Supports headers, tables, code blocks</span>
-                </label>
-                <textarea
-                  name="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={16}
-                  placeholder="# Introduction&#10;&#10;Write the investigative report..."
-                  required
-                  className="w-full p-4 bg-zinc-900/90 border border-zinc-800 rounded-lg text-zinc-100 font-mono text-sm leading-relaxed focus:outline-none focus:border-zinc-500 transition-colors resize-y"
-                />
-              </div>
+        {/* Article Table */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          {loading ? (
+            <div className="py-16 text-center text-sm text-gray-500 font-mono">
+              Loading articles...
             </div>
-
-            {/* Sidebar Column (1 Col) */}
-            <div className="space-y-6">
-              
-              {/* Metadata Panel */}
-              <div className="p-5 bg-zinc-900/60 border border-zinc-800 rounded-lg space-y-5">
-                <h2 className="text-xs uppercase font-mono tracking-wider text-zinc-400 border-b border-zinc-800/80 pb-2">
-                  Publication Settings
-                </h2>
-
-                {/* Slug Input */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono text-zinc-400">URL Slug</label>
-                  <input
-                    name="slug"
-                    value={slug}
-                    onChange={(e) => {
-                      setIsSlugManual(true)
-                      setSlug(e.target.value)
-                    }}
-                    required
-                    placeholder="article-slug"
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded text-xs font-mono text-zinc-200 focus:outline-none focus:border-zinc-500"
-                  />
-                </div>
-
-                {/* Category Dropdown */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono text-zinc-400">Desk / Category</label>
-                  <select
-                    name="category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded text-xs font-mono text-zinc-200 focus:outline-none focus:border-zinc-500"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Cover Image Input */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono text-zinc-400">Cover Image URL</label>
-                  <input
-                    name="cover_image"
-                    type="url"
-                    value={coverImage}
-                    onChange={(e) => setCoverImage(e.target.value)}
-                    required
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded text-xs font-mono text-zinc-200 focus:outline-none focus:border-zinc-500"
-                  />
-                  {coverImage && (
-                    <div className="mt-2 rounded overflow-hidden border border-zinc-800 h-28 bg-zinc-950">
-                      <img
-                        src={coverImage}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Published Checkbox */}
-                <div className="pt-2 border-t border-zinc-800/60">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      name="published"
-                      type="checkbox"
-                      checked={published}
-                      onChange={(e) => setPublished(e.target.checked)}
-                      className="h-4 w-4 rounded bg-zinc-950 border-zinc-800 text-emerald-500 focus:ring-0 focus:ring-offset-0"
-                    />
-                    <span className="text-xs font-mono text-zinc-300">Publish to live feed</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Publish Action Button */}
-              <button
-                type="submit"
-                disabled={isPending}
-                className="w-full py-3.5 bg-zinc-100 text-zinc-900 font-mono font-semibold text-xs uppercase tracking-wider rounded-lg hover:bg-white hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-              >
-                {isPending ? (
-                  <>
-                    <span className="h-3 w-3 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
-                    Dispatching...
-                  </>
-                ) : (
-                  'Deploy Dispatch'
-                )}
-              </button>
+          ) : filteredArticles.length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="text-gray-500 text-sm">No articles matched your filter criteria.</p>
+              {(searchQuery || statusFilter !== 'all' || categoryFilter !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setStatusFilter('all')
+                    setCategoryFilter('all')
+                  }}
+                  className="mt-2 text-xs text-blue-600 hover:underline"
+                >
+                  Reset all filters
+                </button>
+              )}
             </div>
-          </div>
-        </form>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3.5">Title &amp; Path</th>
+                    <th className="px-6 py-3.5">Category</th>
+                    <th className="px-6 py-3.5">Status</th>
+                    <th className="px-6 py-3.5">Created</th>
+                    <th className="px-6 py-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm">
+                  {filteredArticles.map((article) => (
+                    <tr key={article.id} className="hover:bg-gray-50/50 transition">
+                      <td className="px-6 py-4">
+                        <Link
+                          href={`/admin/edit/${article.id}`}
+                          className="font-medium text-gray-900 hover:text-blue-600 transition block"
+                        >
+                          {article.title}
+                        </Link>
+                        <span className="text-xs text-gray-400 font-mono">
+                          /article/{article.slug}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md font-medium">
+                          {article.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() => togglePublishStatus(article)}
+                          disabled={actionLoadingId === article.id}
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition ${
+                            article.published
+                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              article.published ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}
+                          />
+                          {actionLoadingId === article.id
+                            ? 'Updating...'
+                            : article.published
+                            ? 'Published'
+                            : 'Draft'}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-500">
+                        {new Date(article.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-3">
+                        {article.published && (
+                          <Link
+                            href={`/article/${article.slug}`}
+                            target="_blank"
+                            className="text-xs text-gray-500 hover:text-gray-900 transition"
+                          >
+                            View ↗
+                          </Link>
+                        )}
+                        <Link
+                          href={`/admin/edit/${article.id}`}
+                          className="text-xs font-medium text-blue-600 hover:text-blue-800 transition"
+                        >
+                          Edit
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
