@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
+import StickyAd from '@/components/StickyAd'
 import ReadingProgressBar from '@/components/ReadingProgressBar'
 import SocialShare from '@/components/SocialShare'
 import { supabase } from '@/lib/supabase'
@@ -225,6 +226,9 @@ export default async function ArticlePage({ params }: Props) {
           )}
         </main>
       </div>
+
+      {/* Floating Bottom Monetization Bar */}
+      <StickyAd />
 
       <SiteFooter />
     </div>
