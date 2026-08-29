@@ -2,21 +2,18 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import dynamicImport from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdSlot from '@/components/AdSlot'
+import ReadingProgress from '@/components/ReadingProgress'
+import StickyAd from '@/components/StickyAd'
+import ReactionBar from '@/components/ReactionBar'
+import ShareButtons from '@/components/ShareButtons'
+import NewsletterForm from '@/components/NewsletterForm'
 import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
-
-// Dynamic client components with SSR disabled to prevent runtime crashes
-const ReadingProgress = dynamicImport(() => import('@/components/ReadingProgress'), { ssr: false })
-const StickyAd = dynamicImport(() => import('@/components/StickyAd'), { ssr: false })
-const ReactionBar = dynamicImport(() => import('@/components/ReactionBar'), { ssr: false })
-const ShareButtons = dynamicImport(() => import('@/components/ShareButtons'), { ssr: false })
-const NewsletterForm = dynamicImport(() => import('@/components/NewsletterForm'), { ssr: false })
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -111,16 +108,16 @@ export default async function ArticlePage({ params }: PageProps) {
 
   return (
     <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900 relative">
-      {/* 1. Google NewsArticle Schema */}
+      {/* 1. Google Verified JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* 2. Top Scroll Progress Bar */}
+      {/* 2. Reading Progress Bar */}
       <ReadingProgress />
 
-      {/* 3. Floating Dismissible Ad Container */}
+      {/* 3. Floating Dismissible Sticky Ad with Close Button */}
       <StickyAd />
 
       <div>
@@ -173,30 +170,35 @@ export default async function ArticlePage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Top In-Article Ad Slot */}
+          {/* Top Banner Ad */}
           <div className="my-8">
             <AdSlot format="banner" className="w-full flex justify-center" />
           </div>
 
-          {/* Markdown Content */}
+          {/* Formatted Markdown Body */}
           <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed prose-headings:font-serif prose-headings:font-bold prose-headings:text-gray-950 prose-a:text-amber-800 prose-a:underline hover:prose-a:text-amber-950 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-ul:list-disc prose-ol:list-decimal prose-img:rounded-xl">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {article.content || ''}
             </ReactMarkdown>
           </article>
 
-          {/* Reactions & Sharing */}
-          <div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
-            <ReactionBar {...({ articleId: article.id, slug: article.slug } as any)} />
-            <ShareButtons {...({ title: article.title, url: articleUrl } as any)} />
-          </div>
+          {/* Native Reaction & Sharing Section */}
+<div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
+  <ReactionBar
+    articleSlug={article.slug}
+    initialCounts={article.reactions || {}}
+  />
+  <ShareButtons
+  title={article.title}
+/>
+</div>
 
           {/* Newsletter Box */}
           <div className="my-12">
             <NewsletterForm />
           </div>
 
-          {/* Dedicated Bottom Full-Width Ad */}
+          {/* Dedicated Bottom Full-Width Ad Section */}
           <section className="mt-8 pt-8 border-t border-zinc-200">
             <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
               <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-400 mb-2">
