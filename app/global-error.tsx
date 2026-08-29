@@ -18,7 +18,7 @@ export default function GlobalError({
             Something went wrong
           </h2>
           <p className="text-sm text-gray-600 font-serif mb-6 leading-relaxed">
-            An unexpected error occurred while loading this dispatch.
+            An unexpected error occurred while loading this page.
           </p>
           <button
             onClick={() => reset()}
