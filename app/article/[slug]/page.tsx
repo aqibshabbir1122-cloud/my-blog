@@ -21,6 +21,12 @@ type PageProps = {
   params: Promise<{ slug: string }>
 }
 
+const formatDateToISO = (dateStr?: string) => {
+  if (!dateStr) return new Date().toISOString()
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString()
+}
+
 export async function generateStaticParams() {
   const { data: articles } = await supabase
     .from('articles')
@@ -43,18 +49,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!article) return { title: 'Article Not Found | Wanderline' }
 
+  const canonicalUrl = `https://www.wanderline.site/article/${slug}`
+
   return {
     title: `${article.title} | Wanderline`,
     description: article.excerpt || '',
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: article.title,
       description: article.excerpt || '',
-      url: `https://www.wanderline.site/article/${slug}`,
+      url: canonicalUrl,
       siteName: 'Wanderline',
       images: article.cover_image ? [{ url: article.cover_image }] : [],
       type: 'article',
-      publishedTime: article.created_at,
-      modifiedTime: article.updated_at || article.created_at,
+      publishedTime: formatDateToISO(article.created_at),
+      modifiedTime: formatDateToISO(article.updated_at || article.created_at),
       section: article.category,
     },
     twitter: {
@@ -90,8 +101,8 @@ export default async function ArticlePage({ params }: PageProps) {
     headline: article.title,
     description: article.excerpt || '',
     image: [articleImage],
-    datePublished: article.created_at,
-    dateModified: article.updated_at || article.created_at,
+    datePublished: formatDateToISO(article.created_at),
+    dateModified: formatDateToISO(article.updated_at || article.created_at),
     author: [
       {
         '@type': 'Person',
