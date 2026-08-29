@@ -15,8 +15,8 @@ import NewsletterForm from '@/components/NewsletterForm'
 import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// ISR Edge Caching: Caches page on Vercel CDN; revalidates in background every 5 minutes
+export const revalidate = 300
 
 type PageProps = {
   params: { slug: string } | Promise<{ slug: string }>
@@ -108,23 +108,23 @@ export default async function ArticlePage({ params }: PageProps) {
 
   return (
     <div className="bg-[#faf9f6] min-h-screen flex flex-col justify-between selection:bg-amber-100 selection:text-amber-900 relative">
-      {/* 1. Google Verified JSON-LD */}
+      {/* Google SEO JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* 2. Reading Progress Bar */}
+      {/* Top Reading Progress Bar */}
       <ReadingProgress />
 
-      {/* 3. Floating Dismissible Sticky Ad with Close Button */}
+      {/* Floating Dismissible Sticky Ad */}
       <StickyAd />
 
       <div>
         <SiteHeader variant="plain" />
 
         <main className="max-w-4xl mx-auto px-6 py-12">
-          {/* Metadata Row */}
+          {/* Category & Timestamp Breadcrumb */}
           <div className="mb-6 flex items-center space-x-2 text-xs uppercase tracking-widest font-mono text-zinc-500">
             <Link
               href={`/category/${categorySlug}`}
@@ -156,7 +156,7 @@ export default async function ArticlePage({ params }: PageProps) {
             </p>
           )}
 
-          {/* Cover Image (Optimized for LCP Discovery) */}
+          {/* Cover Image (High-Priority LCP Discovery) */}
           {article.cover_image && (
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl mb-10 shadow-sm border border-gray-100">
               <Image
@@ -176,14 +176,14 @@ export default async function ArticlePage({ params }: PageProps) {
             <AdSlot format="banner" className="w-full flex justify-center" />
           </div>
 
-          {/* Formatted Markdown Body */}
+          {/* Markdown Content Body */}
           <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed prose-headings:font-serif prose-headings:font-bold prose-headings:text-gray-950 prose-a:text-amber-800 prose-a:underline hover:prose-a:text-amber-950 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-ul:list-disc prose-ol:list-decimal prose-img:rounded-xl">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {article.content || ''}
             </ReactMarkdown>
           </article>
 
-          {/* Native Reaction & Sharing Section */}
+          {/* Native Reactions & Social Share Section */}
           <div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
             <ReactionBar
               articleSlug={article.slug}
@@ -194,12 +194,12 @@ export default async function ArticlePage({ params }: PageProps) {
             />
           </div>
 
-          {/* Newsletter Box */}
+          {/* Newsletter Subscription Box */}
           <div className="my-12">
             <NewsletterForm />
           </div>
 
-          {/* Dedicated Bottom Full-Width Ad Section (WCAG Compliant Contrast) */}
+          {/* Dedicated Bottom Full-Width Ad Section (WCAG Compliant) */}
           <section className="mt-8 pt-8 border-t border-zinc-200">
             <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
               <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-600 mb-2">
