@@ -8,6 +8,7 @@ import AdSlot from '@/components/AdSlot'
 import StickyAd from '@/components/StickyAd'
 import ReadingProgressBar from '@/components/ReadingProgressBar'
 import SocialShare from '@/components/SocialShare'
+import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
 
 export const revalidate = 3600
@@ -78,12 +79,13 @@ export default async function ArticlePage({ params }: Props) {
 
   const { data: relatedArticles } = await supabase
     .from('articles')
-    .select('id, title, slug, cover_image, reading_time, published_at')
+    .select('id, title, slug, cover_image, reading_time, published_at, content')
     .eq('category', article.category)
     .neq('id', article.id)
     .limit(2)
 
   const articleUrl = `https://www.wanderline.site/article/${article.slug}`
+  const readingTime = article.reading_time || calculateReadingTime(article.content)
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -140,7 +142,7 @@ export default async function ArticlePage({ params }: Props) {
               })}
             </time>
             <span className="text-gray-400">•</span>
-            <span className="text-gray-500">{article.reading_time || '5 min read'}</span>
+            <span className="text-gray-500">{readingTime}</span>
           </div>
 
           {/* Title Header */}
