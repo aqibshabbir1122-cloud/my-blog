@@ -1,11 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 interface SupabaseCookieItem {
   name: string
   value: string
-  options?: Partial<ResponseCookie>
+  options?: CookieOptions
 }
 
 export async function proxy(request: NextRequest) {
