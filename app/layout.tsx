@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
+import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({
@@ -71,6 +72,11 @@ export default function RootLayout({
       <body className="font-sans antialiased text-gray-900 bg-[#faf9f6]">
         {children}
         <Analytics />
+        <Script
+          id="adsterra-social-bar"
+          strategy="afterInteractive"
+          src="https://pl31123019.profitableratecpmnetwork.com/15/e1/b3/15e1b35257a8d560438f5facd9496027.js"
+        />
       </body>
     </html>
   )
