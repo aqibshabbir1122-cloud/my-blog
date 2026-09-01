@@ -9,6 +9,7 @@ import SiteFooter from '@/components/SiteFooter'
 import AdBanner300x250 from '@/components/AdBanner300x250'
 import AdBanner728 from '@/components/AdBanner728'
 import NativeAdBanner from '@/components/NativeAdBanner'
+import SmartLinkButton from '@/components/SmartLinkButton'
 import ReadingProgress from '@/components/ReadingProgress'
 import StickyAd from '@/components/StickyAd'
 import ReactionBar from '@/components/ReactionBar'
@@ -206,6 +207,12 @@ export default async function ArticlePage({ params }: PageProps) {
               {article.content || ''}
             </ReactMarkdown>
           </article>
+
+          {/* Contextual SmartLink Direct Link Button */}
+          <SmartLinkButton
+            label="Explore Official Investigation & Related Reports"
+            subtext="Access verified source coverage & timeline"
+          />
 
           {/* In-Article Native Adsterra Widget */}
           <div className="my-10 border-t border-zinc-200 pt-6">
