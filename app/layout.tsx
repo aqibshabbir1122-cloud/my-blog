@@ -3,7 +3,6 @@ import { Inter, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
 import Script from 'next/script'
 import './globals.css'
-import CappedPopunder from '@/components/CappedPopunder'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -71,13 +70,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="font-sans antialiased text-gray-900 bg-[#faf9f6]">
-        {/* 1. Session-Capped Popunder (Fires once per visit) */}
-        <CappedPopunder />
-
         {children}
         <Analytics />
 
-        {/* 2. Adsterra Social Bar */}
+        {/* Adsterra Social Bar */}
         <Script
           id="adsterra-social-bar"
           strategy="afterInteractive"
