@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
+import AdBanner300x250 from '@/components/AdBanner300x250'
 import AdBanner728 from '@/components/AdBanner728'
 import NativeAdBanner from '@/components/NativeAdBanner'
 import ReadingProgress from '@/components/ReadingProgress'
@@ -193,6 +194,11 @@ export default async function ArticlePage({ params }: PageProps) {
               />
             </div>
           )}
+
+          {/* Top In-Article 300x250 Ad Banner */}
+          <div className="my-6">
+            <AdBanner300x250 />
+          </div>
 
           {/* Formatted Markdown Body */}
           <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed prose-headings:font-serif prose-headings:font-bold prose-headings:text-gray-950 prose-a:text-amber-800 prose-a:underline hover:prose-a:text-amber-950 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-ul:list-disc prose-ol:list-decimal prose-img:rounded-xl">
