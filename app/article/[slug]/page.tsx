@@ -6,7 +6,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
-import AdSlot from '@/components/AdSlot'
+import AdBanner728 from '@/components/AdBanner728'
+import NativeAdBanner from '@/components/NativeAdBanner'
 import ReadingProgress from '@/components/ReadingProgress'
 import StickyAd from '@/components/StickyAd'
 import ReactionBar from '@/components/ReactionBar'
@@ -193,11 +194,6 @@ export default async function ArticlePage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Top In-Article Ad Slot */}
-          <div className="my-8">
-            <AdSlot format="banner" className="w-full flex justify-center" />
-          </div>
-
           {/* Formatted Markdown Body */}
           <article className="prose prose-lg max-w-none font-serif text-gray-800 leading-relaxed prose-headings:font-serif prose-headings:font-bold prose-headings:text-gray-950 prose-a:text-amber-800 prose-a:underline hover:prose-a:text-amber-950 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-ul:list-disc prose-ol:list-decimal prose-img:rounded-xl">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -205,8 +201,13 @@ export default async function ArticlePage({ params }: PageProps) {
             </ReactMarkdown>
           </article>
 
+          {/* In-Article Native Adsterra Widget */}
+          <div className="my-10 border-t border-zinc-200 pt-6">
+            <NativeAdBanner />
+          </div>
+
           {/* Native Reaction & Sharing Section */}
-          <div className="mt-12 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
+          <div className="mt-8 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
             <ReactionBar
               articleSlug={article.slug}
               initialCounts={article.reactions || {}}
@@ -221,13 +222,13 @@ export default async function ArticlePage({ params }: PageProps) {
             <NewsletterForm />
           </div>
 
-          {/* Dedicated Bottom Full-Width Ad Section */}
+          {/* Dedicated Bottom Leaderboard Ad Section */}
           <section className="mt-8 pt-8 border-t border-zinc-200">
             <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
               <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-600 mb-2">
                 Advertisement
               </span>
-              <AdSlot format="banner-728x90" className="w-full flex justify-center" />
+              <AdBanner728 />
             </div>
           </section>
         </main>

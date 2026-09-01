@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import HomeGrid from '@/components/HomeGrid'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
-import AdSlot from '@/components/AdSlot'
+import AdBanner728 from '@/components/AdBanner728'
 
 export default async function Home() {
   const { data: articles } = await supabase
@@ -22,7 +22,9 @@ export default async function Home() {
 
       <main className="max-w-5xl mx-auto px-6 py-10">
         {/* Top Leaderboard Ad Unit */}
-        <AdSlot format="banner-728x90" className="mb-10" />
+        <div className="mb-10">
+          <AdBanner728 />
+        </div>
 
         <HomeGrid articles={articles || []} />
       </main>
