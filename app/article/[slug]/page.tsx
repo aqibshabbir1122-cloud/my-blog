@@ -9,6 +9,7 @@ import AdBanner728 from '@/components/AdBanner728'
 import NativeAdBanner from '@/components/NativeAdBanner'
 import SmartLinkButton from '@/components/SmartLinkButton'
 import SplitMarkdownContent from '@/components/SplitMarkdownContent'
+import StickySidebarAd from '@/components/StickySidebarAd'
 import ReadingProgress from '@/components/ReadingProgress'
 import StickyAd from '@/components/StickyAd'
 import ReactionBar from '@/components/ReactionBar'
@@ -147,7 +148,7 @@ export default async function ArticlePage({ params }: PageProps) {
       <div>
         <SiteHeader variant="plain" />
 
-        <main className="max-w-4xl mx-auto px-6 py-12">
+        <main className="max-w-6xl mx-auto px-6 py-12">
           {/* Breadcrumb Header */}
           <div className="mb-6 flex items-center space-x-2 text-xs uppercase tracking-widest font-mono text-zinc-500">
             <Link
@@ -180,58 +181,67 @@ export default async function ArticlePage({ params }: PageProps) {
             </p>
           )}
 
-          {/* Cover Image */}
-          {article.cover_image && (
-            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl mb-10 shadow-sm border border-gray-100">
-              <Image
-                src={article.cover_image}
-                alt={article.title}
-                fill
-                priority
-                fetchPriority="high"
-                sizes="(max-width: 1024px) 100vw, 896px"
-                className="object-cover"
+          {/* Two-Column Grid: Content Column + Sticky Sidebar */}
+          <div className="flex flex-col lg:flex-row gap-10 items-start">
+            {/* Left/Main Reading Column */}
+            <div className="w-full lg:flex-1 min-w-0">
+              {/* Cover Image */}
+              {article.cover_image && (
+                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl mb-8 shadow-sm border border-gray-100">
+                  <Image
+                    src={article.cover_image}
+                    alt={article.title}
+                    fill
+                    priority
+                    fetchPriority="high"
+                    sizes="(max-width: 1024px) 100vw, 800px"
+                    className="object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Top In-Article 300x250 Ad Banner */}
+              <div className="my-6">
+                <AdBanner300x250 />
+              </div>
+
+              {/* Formatted Markdown Body with Automated Mid-Article Ad & SmartLink Insertion */}
+              <SplitMarkdownContent content={article.content || ''} />
+
+              {/* Contextual SmartLink Direct Link Button */}
+              <SmartLinkButton
+                label="Explore Official Investigation & Related Reports"
+                subtext="Access verified source coverage & timeline"
               />
+
+              {/* In-Article Native Adsterra Widget */}
+              <div className="my-10 border-t border-zinc-200 pt-6">
+                <NativeAdBanner />
+              </div>
+
+              {/* Native Reaction & Sharing Section */}
+              <div className="mt-8 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
+                <ReactionBar
+                  articleSlug={article.slug}
+                  initialCounts={article.reactions || {}}
+                />
+                <ShareButtons
+                  title={article.title}
+                />
+              </div>
+
+              {/* Newsletter Form */}
+              <div className="my-12">
+                <NewsletterForm />
+              </div>
             </div>
-          )}
 
-          {/* Top In-Article 300x250 Ad Banner */}
-          <div className="my-6">
-            <AdBanner300x250 />
-          </div>
-
-          {/* Formatted Markdown Body with Automated Mid-Article Ad Insertion */}
-          <SplitMarkdownContent content={article.content || ''} />
-
-          {/* Contextual SmartLink Direct Link Button */}
-          <SmartLinkButton
-            label="Explore Official Investigation & Related Reports"
-            subtext="Access verified source coverage & timeline"
-          />
-
-          {/* In-Article Native Adsterra Widget */}
-          <div className="my-10 border-t border-zinc-200 pt-6">
-            <NativeAdBanner />
-          </div>
-
-          {/* Native Reaction & Sharing Section */}
-          <div className="mt-8 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-4">
-            <ReactionBar
-              articleSlug={article.slug}
-              initialCounts={article.reactions || {}}
-            />
-            <ShareButtons
-              title={article.title}
-            />
-          </div>
-
-          {/* Newsletter Form */}
-          <div className="my-12">
-            <NewsletterForm />
+            {/* Right Desktop Sticky Sidebar */}
+            <StickySidebarAd />
           </div>
 
           {/* Dedicated Bottom Leaderboard Ad Section */}
-          <section className="mt-8 pt-8 border-t border-zinc-200">
+          <section className="mt-12 pt-8 border-t border-zinc-200">
             <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
               <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-600 mb-2">
                 Advertisement
