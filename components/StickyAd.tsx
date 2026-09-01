@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 
 interface StickyAdProps {
@@ -10,14 +10,12 @@ interface StickyAdProps {
 }
 
 export default function StickyAd({
-  adKey = 'PASTE_YOUR_728x90_KEY_HERE',
+  adKey = '60e4236c44b94a24cab74af2793745f3',
   width = 728,
   height = 90,
 }: StickyAdProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const isLoadedRef = useRef(false)
 
   useEffect(() => {
     // Show sticky ad after 6 seconds of reading
@@ -28,47 +26,40 @@ export default function StickyAd({
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    if (
-      !isVisible ||
-      isDismissed ||
-      isLoadedRef.current ||
-      !containerRef.current ||
-      adKey.includes('PASTE_YOUR')
-    ) {
-      return
-    }
-
-    isLoadedRef.current = true
-
-    try {
-      const confScript = document.createElement('script')
-      confScript.type = 'text/javascript'
-      confScript.text = `
-        atOptions = {
-          'key': '${adKey}',
-          'format': 'iframe',
-          'height': ${height},
-          'width': ${width},
-          'params': {}
-        };
-      `
-
-      const invokeScript = document.createElement('script')
-      invokeScript.type = 'text/javascript'
-      invokeScript.async = true
-      invokeScript.src = `//www.highperformanceformat.com/${adKey}/invoke.js`
-
-      containerRef.current.appendChild(confScript)
-      containerRef.current.appendChild(invokeScript)
-    } catch (err) {
-      console.error('Sticky Ad initialization error:', err)
-    }
-  }, [isVisible, isDismissed, adKey, width, height])
-
   if (isDismissed || !isVisible) {
     return null
   }
+
+  const adHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+            overflow: hidden;
+          }
+        </style>
+      </head>
+      <body>
+        <script type="text/javascript">
+          atOptions = {
+            'key' : '${adKey}',
+            'format' : 'iframe',
+            'height' : ${height},
+            'width' : ${width},
+            'params' : {}
+          };
+        </script>
+        <script type="text/javascript" src="https://www.highrevenueformat.com/${adKey}/invoke.js"></script>
+      </body>
+    </html>
+  `
 
   return (
     <div
@@ -85,15 +76,22 @@ export default function StickyAd({
         </button>
 
         <div
-          ref={containerRef}
           style={{
-            minWidth: `${Math.min(width, 300)}px`,
             minHeight: `${height}px`,
             maxWidth: `${width}px`,
             width: '100%',
           }}
           className="flex items-center justify-center overflow-hidden"
-        />
+        >
+          <iframe
+            title="sticky-bottom-ad"
+            srcDoc={adHtml}
+            width={width}
+            height={height}
+            className="border-0 overflow-hidden max-w-full"
+            scrolling="no"
+          />
+        </div>
       </div>
     </div>
   )
