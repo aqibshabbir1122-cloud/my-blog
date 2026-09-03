@@ -59,6 +59,9 @@ export const metadata: Metadata = {
   },
   verification: {
     google: 'p0U9Wl-GsIZT7wWx4gzL4qI5TLAz9wRjP9cdz7M1ZuM',
+    other: {
+      'google-adsense-account': 'ca-pub-8589841813564545',
+    },
   },
 }
 
@@ -73,7 +76,7 @@ export default function RootLayout({
         {children}
         <Analytics />
 
-        {/* Google AdSense Verification Tag */}
+        {/* Google AdSense Script */}
         <Script
           id="google-adsense"
           async
