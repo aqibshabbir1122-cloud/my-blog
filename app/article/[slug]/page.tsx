@@ -5,7 +5,6 @@ import type { Metadata } from 'next'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
 import AdBanner300x250 from '@/components/AdBanner300x250'
-import AdBanner728 from '@/components/AdBanner728'
 import NativeAdBanner from '@/components/NativeAdBanner'
 import SmartLinkButton from '@/components/SmartLinkButton'
 import SplitMarkdownContent from '@/components/SplitMarkdownContent'
@@ -239,16 +238,6 @@ export default async function ArticlePage({ params }: PageProps) {
             {/* Right Desktop Sticky Sidebar */}
             <StickySidebarAd />
           </div>
-
-          {/* Dedicated Bottom Leaderboard Ad Section */}
-          <section className="mt-12 pt-8 border-t border-zinc-200">
-            <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
-              <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-600 mb-2">
-                Advertisement
-              </span>
-              <AdBanner728 />
-            </div>
-          </section>
         </main>
       </div>
 

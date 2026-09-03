@@ -4,7 +4,6 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import SiteHeader from '@/components/SiteHeader'
 import SiteFooter from '@/components/SiteFooter'
-import AdBanner728 from '@/components/AdBanner728'
 import { calculateReadingTime } from '@/lib/reading-time'
 import { supabase } from '@/lib/supabase'
 
@@ -87,16 +86,6 @@ export default async function CategoryPage({ params }: Props) {
             </p>
           </div>
 
-          {/* Top Banner Monetization Slot */}
-          <div className="my-8 flex flex-col items-center justify-center">
-            <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-500 mb-2">
-              Advertisement
-            </span>
-            <div className="w-full max-w-[728px] min-h-[90px] flex items-center justify-center overflow-hidden">
-              <AdBanner728 />
-            </div>
-          </div>
-
           {/* Articles Grid */}
           {!articles || articles.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
@@ -177,16 +166,6 @@ export default async function CategoryPage({ params }: Props) {
               })}
             </div>
           )}
-
-          {/* Dedicated Bottom Leaderboard Ad Section */}
-          <section className="mt-16 pt-8 border-t border-zinc-200">
-            <div className="bg-zinc-100/70 border border-zinc-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
-              <span className="text-[10px] tracking-widest uppercase font-mono text-zinc-600 mb-2">
-                Advertisement
-              </span>
-              <AdBanner728 />
-            </div>
-          </section>
         </main>
       </div>
 
