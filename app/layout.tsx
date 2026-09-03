@@ -84,6 +84,13 @@ export default function RootLayout({
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8589841813564545"
           crossOrigin="anonymous"
         />
+
+        {/* Adsterra Social Bar */}
+        <Script
+          id="adsterra-social-bar"
+          strategy="afterInteractive"
+          src="https://pl31123019.profitableratecpmnetwork.com/15/e1/b3/15e1b35257a8d560438f5facd9496027.js"
+        />
       </body>
     </html>
   )
