@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
+import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({
@@ -71,6 +72,15 @@ export default function RootLayout({
       <body className="font-sans antialiased text-gray-900 bg-[#faf9f6]">
         {children}
         <Analytics />
+
+        {/* Google AdSense Verification Tag */}
+        <Script
+          id="google-adsense"
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8589841813564545"
+          crossOrigin="anonymous"
+        />
       </body>
     </html>
   )
